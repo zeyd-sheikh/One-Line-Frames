@@ -1,3 +1,5 @@
 old.jsx
 .env.local
 .env
+node_modules/
+.next/
