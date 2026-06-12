@@ -11,7 +11,7 @@ export default function AdminPage() {
       <PageIntro
         eyebrow="restricted moderation area"
         title="admin workspace"
-        description="Three separate admin accounts will share the moderation tools while every action remains attributable to the person who performed it."
+        description="Authorized moderators will use this private workspace. Every action must remain attributable to the person who performed it."
       />
 
       <div className="panel-grid panel-grid-three">

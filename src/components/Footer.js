@@ -27,7 +27,6 @@ export default function Footer() {
       <div className="footer-links footer-site-links">
         <Link href={ROUTES.privacy}>privacy</Link>
         <Link href={ROUTES.login}>account</Link>
-        <Link href={ROUTES.admin}>admin</Link>
         <a href={`mailto:${PRODUCT.contactEmail}`}>contact</a>
       </div>
     </footer>

@@ -60,6 +60,8 @@ docs/
 - Public pages may use demo data, but must not pretend backend actions work.
 - Authentication and authorization must be enforced server-side and with
   Supabase Row Level Security.
+- The admin workspace must not appear in public navigation and must reject
+  unauthorized access even when someone knows its URL.
 - Anonymous posts remain privately linked to their owner.
 - Admins may edit submission metadata, but not replace the original photo.
 - Every moderation change must be attributable and auditable.
