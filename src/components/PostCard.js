@@ -1,16 +1,29 @@
 import Image from "next/image";
 
+const DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export default function PostCard({ submission }) {
   const author = submission.isAnonymous
     ? "anonymous"
     : submission.displayName || "anonymous";
+  const frameClassName = [
+    "photo-frame",
+    submission.orientation,
+    submission.frameCssClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <article className="post-card">
-      <div className={`photo-frame ${submission.orientation}`}>
-        {submission.imageUrl ? (
+      <div className={frameClassName}>
+        {submission.displayImageUrl ? (
           <Image
-            src={submission.imageUrl}
+            src={submission.displayImageUrl}
             alt={submission.line}
             className="post-image"
             fill
@@ -25,8 +38,10 @@ export default function PostCard({ submission }) {
 
       <div className="post-meta">
         <span>{author}</span>
-        <span className="post-category">{submission.category}</span>
-        <span>{submission.createdAt}</span>
+        <span className="post-category">{submission.categoryName}</span>
+        <time dateTime={submission.createdAt}>
+          {DATE_FORMATTER.format(new Date(submission.createdAt))}
+        </time>
       </div>
 
       <div className="post-tags" aria-label="mood tags">

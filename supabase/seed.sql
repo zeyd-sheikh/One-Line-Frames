@@ -1,0 +1,2 @@
+-- Reference categories and frames are inserted by the foundation migration.
+-- Add development-only sample records here later.

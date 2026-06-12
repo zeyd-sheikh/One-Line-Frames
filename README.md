@@ -31,6 +31,30 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 Never expose a Supabase secret or service-role key in a `NEXT_PUBLIC_*`
 environment variable.
 
+## Database foundation
+
+The Phase 1A schema is stored in:
+
+```text
+supabase/migrations/20260612000000_phase_1a_database_foundation.sql
+```
+
+It creates profiles, categories, frames, submissions, tags, admin edit history,
+appeals, removal requests, the public gallery function, and Row Level Security
+policies. The local Supabase configuration also defines private original and
+display image buckets with a 25 MB limit.
+
+To validate or rebuild the database locally, install Docker Desktop and run:
+
+```bash
+supabase start
+supabase db reset
+```
+
+Applying the migration to the hosted project should be a deliberate database
+step. Do not paste both the original draft SQL and this migration into the same
+project without reviewing the existing schema first.
+
 ## Commands
 
 ```bash
@@ -49,6 +73,9 @@ src/
   constants/           Product values, statuses, roles, and routes
   lib/supabase/        Browser/server Supabase client factories
   services/            Data access boundary; currently demo data only
+supabase/
+  migrations/          Version-controlled database changes
+  config.toml          Local Auth, Storage, and database configuration
 docs/
   DATA_MODEL.md        Planned entities and security boundaries
   PRODUCT_DECISIONS.md Confirmed rules and open decisions

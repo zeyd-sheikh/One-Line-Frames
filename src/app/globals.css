@@ -205,6 +205,27 @@ textarea {
   box-shadow: 0 8px 22px var(--shadow);
 }
 
+.photo-frame.portrait {
+  aspect-ratio: 4 / 5;
+}
+
+.photo-frame.square {
+  aspect-ratio: 1;
+}
+
+.frame-soft-paper {
+  border-color: #d7c4a9;
+  background: #fffaf1;
+}
+
+.frame-clean-landscape,
+.frame-clean-portrait,
+.frame-clean-square {
+  border-color: #cfc8be;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(47, 41, 36, 0.07);
+}
+
 .photo-placeholder {
   width: 100%;
   height: 100%;
