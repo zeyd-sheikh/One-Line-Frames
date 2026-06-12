@@ -1,7 +1,5 @@
 "use client";
 
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Gallery from "../components/Gallery";
@@ -10,27 +8,26 @@ import {
   getSubmissionTags,
 } from "../services/submissions";
 
-export default function HomePage() {
-  const submissions = getApprovedSubmissions();
-  const tags = getSubmissionTags(submissions);
+const approvedSubmissions = getApprovedSubmissions();
+const submissionTags = getSubmissionTags(approvedSubmissions);
 
+export default function HomePage() {
   const [activeTag, setActiveTag] = useState("all");
 
   const filteredSubmissions = useMemo(() => {
     if (activeTag === "all") {
-      return submissions;
+      return approvedSubmissions;
     }
 
-    return submissions.filter((submission) => {
-      return submission.tag === activeTag;
+    return approvedSubmissions.filter((submission) => {
+      return submission.tags.includes(activeTag);
     });
-  }, [activeTag, submissions]);
+  }, [activeTag]);
 
   return (
     <main>
-    <Navbar activePage="moments" />
-
       <section className="hero">
+        <p className="eyebrow">a student-made gallery</p>
         <h1>
           one photo. one line.
           <br />
@@ -47,7 +44,7 @@ export default function HomePage() {
       </section>
 
       <section className="tag-filter" aria-label="filter moments by mood tag">
-        {tags.map((tag) => (
+        {submissionTags.map((tag) => (
           <button
             key={tag}
             type="button"
@@ -72,8 +69,6 @@ export default function HomePage() {
           through something heavy, you don&apos;t have to be alone with it.
         </p>
       </section>
-
-    <Footer />
     </main>
   );
 }

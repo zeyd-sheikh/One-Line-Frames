@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { PRODUCT, SUPPORT_LINKS } from "../constants/product";
+import { ROUTES } from "../constants/routes";
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -6,19 +10,25 @@ export default function Footer() {
       <div className="support">
         <span>if you&apos;re struggling, you&apos;re not alone.</span>
 
-        <div>
-          <a href="https://kidshelpphone.ca/" target="_blank">
-            kids help phone
-          </a>
-
-          <a href="https://good2talk.ca/" target="_blank">
-            good2talk
-          </a>
-
-          <a href="https://988.ca/" target="_blank">
-            crisis services canada
-          </a>
+        <div className="footer-links">
+          {SUPPORT_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
+      </div>
+
+      <div className="footer-links footer-site-links">
+        <Link href={ROUTES.privacy}>privacy</Link>
+        <Link href={ROUTES.login}>account</Link>
+        <Link href={ROUTES.admin}>admin</Link>
+        <a href={`mailto:${PRODUCT.contactEmail}`}>contact</a>
       </div>
     </footer>
   );

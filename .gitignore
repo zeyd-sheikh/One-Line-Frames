@@ -3,3 +3,4 @@ old.jsx
 .env
 node_modules/
 .next/
+docs/

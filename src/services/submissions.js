@@ -1,10 +1,12 @@
-const MOCK_SUBMISSIONS = [
+const DEMO_SUBMISSIONS = [
   {
     id: "1",
     imageUrl: null,
     line: "found the last quiet corner of the library before exams started.",
-    authorName: "S.",
-    tag: "before the storm",
+    displayName: "S.",
+    isAnonymous: false,
+    category: "quiet moments",
+    tags: ["before the storm", "campus"],
     createdAt: "28m ago",
     orientation: "landscape",
     status: "approved",
@@ -13,8 +15,10 @@ const MOCK_SUBMISSIONS = [
     id: "2",
     imageUrl: null,
     line: "the exam was tomorrow. i watched the birds instead.",
-    authorName: "Nadia",
-    tag: "after the exam",
+    displayName: "Nadia",
+    isAnonymous: false,
+    category: "campus life",
+    tags: ["after the exam", "outside"],
     createdAt: "7h ago",
     orientation: "landscape",
     status: "approved",
@@ -23,8 +27,10 @@ const MOCK_SUBMISSIONS = [
     id: "3",
     imageUrl: null,
     line: "the sky looked softer after the rain.",
-    authorName: "anonymous",
-    tag: "walking home",
+    displayName: null,
+    isAnonymous: true,
+    category: "nature",
+    tags: ["walking home", "rain"],
     createdAt: "1d ago",
     orientation: "landscape",
     status: "approved",
@@ -33,8 +39,10 @@ const MOCK_SUBMISSIONS = [
     id: "4",
     imageUrl: null,
     line: "half my thoughts stayed somewhere between class and the bus stop.",
-    authorName: "M.",
-    tag: "in between",
+    displayName: "M.",
+    isAnonymous: false,
+    category: "quiet moments",
+    tags: ["in between", "commute"],
     createdAt: "2d ago",
     orientation: "landscape",
     status: "approved",
@@ -42,12 +50,12 @@ const MOCK_SUBMISSIONS = [
 ];
 
 export function getApprovedSubmissions() {
-  return MOCK_SUBMISSIONS.filter((submission) => {
+  return DEMO_SUBMISSIONS.filter((submission) => {
     return submission.status === "approved";
   });
 }
 
 export function getSubmissionTags(submissions) {
-  const tags = submissions.map((submission) => submission.tag);
+  const tags = submissions.flatMap((submission) => submission.tags);
   return ["all", ...new Set(tags)];
 }

@@ -1,26 +1,30 @@
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
-import SubmitForm from "../../components/SubmitForm";
+import FoundationPanel from "../../components/FoundationPanel";
+import PageIntro from "../../components/PageIntro";
+
+export const metadata = {
+  title: "Send a moment",
+};
 
 export default function SubmitPage() {
   return (
-    <main>
-      <Navbar activePage="submit" />
+    <main className="page-shell">
+      <PageIntro
+        eyebrow="submission workspace"
+        title="send a moment"
+        description="One photo, one short line, and a few choices about how your moment should appear. Submissions will be reviewed before publishing."
+      />
 
-      <section className="page-shell submit-page">
-        <div className="page-heading">
-          <h1>send a moment</h1>
-          <p>
-            one photo, one line. that&apos;s the whole thing.
-            <br />
-            submissions are reviewed before they go up.
-          </p>
-        </div>
-
-        <SubmitForm />
-      </section>
-
-      <Footer />
+      <FoundationPanel
+        title="The form is being prepared"
+        description="Uploads are intentionally disabled during the foundation phase. The finished flow will require a verified account and save every new submission as pending."
+        items={[
+          "upload one original photo",
+          "write a short caption",
+          "choose a category and mood tags",
+          "use a profile name, initials, or post anonymously",
+          "accept the submission terms",
+        ]}
+      />
     </main>
   );
 }

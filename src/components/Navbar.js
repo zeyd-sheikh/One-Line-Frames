@@ -1,27 +1,63 @@
-import Link from "next/link";
+"use client";
 
-export default function Navbar({ activePage }) {
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  ACCOUNT_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  ROUTES,
+} from "../constants/routes";
+import { PRODUCT } from "../constants/product";
+
+function isActivePath(pathname, href) {
+  if (href === ROUTES.home) {
+    return pathname === href;
+  }
+
+  return pathname.startsWith(href);
+}
+
+export default function Navbar() {
+  const pathname = usePathname();
+
   return (
-    <nav className="navbar">
+    <nav className="navbar" aria-label="Primary navigation">
       <Link href="/" className="logo">
-        one line frames.
+        {PRODUCT.shortName}
       </Link>
 
       <div className="nav-links">
-        <Link href="/" className={activePage === "moments" ? "active" : ""}>
-          moments
-        </Link>
+        {PRIMARY_NAV_ITEMS.map((item) => {
+          const isActive = isActivePath(pathname, item.href);
 
-        <Link
-          href="/submit"
-          className={activePage === "submit" ? "active" : ""}
-        >
-          send a moment
-        </Link>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive ? "active" : ""}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
 
-        <Link href="/about" className={activePage === "about" ? "active" : ""}>
-          about
-        </Link>
+      <div className="account-links">
+        {ACCOUNT_NAV_ITEMS.map((item) => {
+          const isActive = isActivePath(pathname, item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive ? "active" : ""}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
