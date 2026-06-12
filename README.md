@@ -36,7 +36,7 @@ environment variable.
 The Phase 1A schema is stored in:
 
 ```text
-supabase/migrations/20260612000000_phase_1a_database_foundation.sql
+supabase/migrations/20260612000000_initial_schema.sql
 ```
 
 It creates profiles, categories, frames, submissions, tags, admin edit history,

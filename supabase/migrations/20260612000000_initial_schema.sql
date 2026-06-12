@@ -1,5 +1,5 @@
 -- One Line Frames
--- Phase 1A: database foundation
+-- Initial database schema
 
 begin;
 
