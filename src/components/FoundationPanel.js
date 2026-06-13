@@ -1,8 +1,19 @@
-export default function FoundationPanel({ title, description, items = [] }) {
+import Icon from "./Icon";
+
+export default function FoundationPanel({
+  title,
+  description,
+  items = [],
+  eyebrow = "coming into focus",
+  icon = "sparkle",
+}) {
   return (
     <section className="foundation-panel">
-      <div>
-        <p className="eyebrow">foundation preview</p>
+      <div className="panel-icon">
+        <Icon name={icon} size={20} />
+      </div>
+      <div className="panel-copy">
+        <p className="eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
