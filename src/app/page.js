@@ -9,8 +9,8 @@ import {
   getPhotoOfWeek,
 } from "../services/submissions";
 
-export default function HomePage() {
-  const submissions = getApprovedSubmissions();
+export default async function HomePage() {
+  const submissions = await getApprovedSubmissions();
   const photoOfWeek = getPhotoOfWeek(submissions);
   const featured = getFeaturedSubmissions(submissions);
 

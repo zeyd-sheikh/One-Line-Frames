@@ -46,6 +46,8 @@ export const SUBMISSION_LIMITS = Object.freeze({
   lineCharacters: 120,
   displayNameCharacters: 80,
   imageBytes: 26_214_400,
+  tagCount: 5,
+  tagCharacters: 30,
   editReasonCharacters: 1_000,
   appealCharacters: 2_000,
   removalReasonCharacters: 2_000,

@@ -8,8 +8,8 @@ export const metadata = {
     "Browse approved student moments without likes, rankings, or pressure.",
 };
 
-export default function GalleryPage() {
-  const submissions = getApprovedSubmissions();
+export default async function GalleryPage() {
+  const submissions = await getApprovedSubmissions();
 
   return (
     <main className="gallery-page">

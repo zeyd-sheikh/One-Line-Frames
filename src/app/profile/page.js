@@ -1,5 +1,4 @@
 import AuthSubmitButton from "../../components/AuthSubmitButton";
-import FoundationPanel from "../../components/FoundationPanel";
 import Icon from "../../components/Icon";
 import PageIntro from "../../components/PageIntro";
 import { SUBMISSION_LIMITS } from "../../constants/product";
@@ -13,13 +12,44 @@ export const metadata = {
 export default async function ProfilePage({ searchParams }) {
   const params = await searchParams;
   const { supabase, claims } = await requireAuthenticatedUser();
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("display_name, username, role, accepted_terms, created_at")
-    .eq("id", claims.sub)
-    .maybeSingle();
+  const [
+    { data: profile, error },
+    { data: submissions, error: submissionsError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, username, role, accepted_terms, created_at")
+      .eq("id", claims.sub)
+      .maybeSingle(),
+    supabase
+      .from("submissions")
+      .select(
+        "id, one_line, edited_one_line, status, rejection_reason, display_name_snapshot, is_anonymous, created_at"
+      )
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const submissionIds = (submissions ?? []).map((submission) => submission.id);
+  const { data: adminEdits } = submissionIds.length
+    ? await supabase
+        .from("admin_edits")
+        .select("submission_id, reason, created_at")
+        .in("submission_id", submissionIds)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const latestEditReason = new Map();
+
+  (adminEdits ?? []).forEach((edit) => {
+    if (!latestEditReason.has(edit.submission_id)) {
+      latestEditReason.set(edit.submission_id, edit.reason);
+    }
+  });
 
   const displayName = profile?.display_name || claims.email || "your profile";
+  const moments = submissions ?? [];
+  const pendingCount = moments.filter(
+    (submission) => submission.status === "pending"
+  ).length;
   const message = typeof params?.message === "string" ? params.message : "";
   const actionError = typeof params?.error === "string" ? params.error : "";
 
@@ -32,7 +62,7 @@ export default async function ProfilePage({ searchParams }) {
         <PageIntro
           eyebrow="your quiet corner"
           title={displayName}
-          description="Your account is connected. Submission history and moderation updates will appear here as those systems are built."
+          description="Follow each submitted moment from private review to its final decision, including any notes left by the admin team."
         />
         <div className="profile-state">
           <span className="status-dot" />
@@ -45,6 +75,11 @@ export default async function ProfilePage({ searchParams }) {
           We could not load your profile details. Please try again shortly.
         </p>
       ) : null}
+      {submissionsError ? (
+        <p className="auth-message auth-error" role="alert">
+          We could not load your submission history.
+        </p>
+      ) : null}
       {actionError ? (
         <p className="auth-message auth-error" role="alert">
           {actionError}
@@ -54,11 +89,11 @@ export default async function ProfilePage({ searchParams }) {
 
       <div className="profile-overview">
         <article className="profile-stat">
-          <span>00</span>
-          <p>moments shared</p>
+          <span>{String(moments.length).padStart(2, "0")}</span>
+          <p>moments submitted</p>
         </article>
         <article className="profile-stat">
-          <span>00</span>
+          <span>{String(pendingCount).padStart(2, "0")}</span>
           <p>awaiting review</p>
         </article>
         <article className="profile-stat">
@@ -102,18 +137,57 @@ export default async function ProfilePage({ searchParams }) {
           </form>
         </section>
 
-        <FoundationPanel
-          eyebrow="soon"
-          icon="journal"
-          title="your submission history"
-          description="Pending, approved, rejected, appealed, and removal-requested moments will be gathered here."
-          items={[
-            profile?.accepted_terms
-              ? "submission terms accepted"
-              : "terms will be shown before your first submission",
-            "private to your account",
-          ]}
-        />
+        <section className="profile-history">
+          <div className="profile-history-heading">
+            <p className="eyebrow">your submissions</p>
+            <h2>moments in progress.</h2>
+          </div>
+
+          {moments.length ? (
+            <div className="profile-history-list">
+              {moments.map((submission) => {
+                const moderationReason =
+                  submission.rejection_reason ||
+                  latestEditReason.get(submission.id);
+
+                return (
+                  <article key={submission.id}>
+                    <div className="history-status-row">
+                      <span className={`history-status ${submission.status}`}>
+                        {submission.status}
+                      </span>
+                      <time dateTime={submission.created_at}>
+                        {new Intl.DateTimeFormat("en-CA", {
+                          month: "short",
+                          day: "numeric",
+                        }).format(new Date(submission.created_at))}
+                      </time>
+                    </div>
+                    <p>
+                      {submission.edited_one_line || submission.one_line}
+                    </p>
+                    <small>
+                      {submission.is_anonymous
+                        ? "anonymous"
+                        : submission.display_name_snapshot || "named post"}
+                    </small>
+                    {moderationReason ? (
+                      <div className="history-reason">
+                        <strong>admin note</strong>
+                        <span>{moderationReason}</span>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="profile-history-empty">
+              <Icon name="journal" size={22} />
+              <p>Your first submitted moment will appear here.</p>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

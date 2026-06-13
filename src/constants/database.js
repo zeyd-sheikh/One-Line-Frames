@@ -12,6 +12,8 @@ export const DATABASE_TABLES = Object.freeze({
 
 export const DATABASE_FUNCTIONS = Object.freeze({
   getPublicSubmissions: "get_public_submissions",
+  createSubmission: "create_submission",
+  reviewSubmission: "review_submission",
 });
 
 export const STORAGE_BUCKETS = Object.freeze({

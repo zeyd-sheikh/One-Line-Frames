@@ -1,3 +1,10 @@
+import "server-only";
+import {
+  DATABASE_FUNCTIONS,
+  STORAGE_BUCKETS,
+} from "../constants/database";
+import { createClient } from "../lib/supabase/server";
+
 const DEMO_PUBLIC_SUBMISSION_ROWS = [
   {
     id: "1",
@@ -90,11 +97,44 @@ export function mapPublicSubmission(row) {
   };
 }
 
-export function getApprovedSubmissions() {
-  return DEMO_PUBLIC_SUBMISSION_ROWS.map(mapPublicSubmission);
+export async function getApprovedSubmissions() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    DATABASE_FUNCTIONS.getPublicSubmissions
+  );
+
+  if (error || !data?.length) {
+    return DEMO_PUBLIC_SUBMISSION_ROWS.map(mapPublicSubmission);
+  }
+
+  const displayPaths = [
+    ...new Set(
+      data
+        .map((submission) => submission.display_image_path)
+        .filter(Boolean)
+    ),
+  ];
+  const { data: signedImages } = displayPaths.length
+    ? await supabase.storage
+        .from(STORAGE_BUCKETS.displayImages)
+        .createSignedUrls(displayPaths, 60 * 60)
+    : { data: [] };
+  const signedUrlByPath = new Map(
+    (signedImages ?? [])
+      .filter((image) => image.path && image.signedUrl)
+      .map((image) => [image.path, image.signedUrl])
+  );
+
+  return data.map((submission) =>
+    mapPublicSubmission({
+      ...submission,
+      display_image_url:
+        signedUrlByPath.get(submission.display_image_path) ?? null,
+    })
+  );
 }
 
-export function getPhotoOfWeek(submissions = getApprovedSubmissions()) {
+export function getPhotoOfWeek(submissions = []) {
   return (
     submissions.find((submission) => submission.isPhotoOfWeek) ??
     submissions[0] ??
@@ -103,7 +143,7 @@ export function getPhotoOfWeek(submissions = getApprovedSubmissions()) {
 }
 
 export function getFeaturedSubmissions(
-  submissions = getApprovedSubmissions(),
+  submissions = [],
   limit = 3
 ) {
   const photoOfWeek = getPhotoOfWeek(submissions);
