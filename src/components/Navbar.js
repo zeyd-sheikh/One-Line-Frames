@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ACCOUNT_NAV_ITEMS,
-  PRIMARY_NAV_ITEMS,
-  ROUTES,
-} from "../constants/routes";
+import { logout } from "../app/auth/actions";
+import { PRIMARY_NAV_ITEMS, ROUTES } from "../constants/routes";
 import { PRODUCT } from "../constants/product";
 
 function isActivePath(pathname, href) {
@@ -17,7 +14,7 @@ function isActivePath(pathname, href) {
   return pathname.startsWith(href);
 }
 
-export default function Navbar() {
+export default function Navbar({ isAuthenticated }) {
   const pathname = usePathname();
 
   return (
@@ -44,20 +41,34 @@ export default function Navbar() {
       </div>
 
       <div className="account-links">
-        {ACCOUNT_NAV_ITEMS.map((item) => {
-          const isActive = isActivePath(pathname, item.href);
-
-          return (
+        {isAuthenticated ? (
+          <>
             <Link
-              key={item.href}
-              href={item.href}
-              className={isActive ? "active" : ""}
-              aria-current={isActive ? "page" : undefined}
+              href={ROUTES.profile}
+              className={isActivePath(pathname, ROUTES.profile) ? "active" : ""}
+              aria-current={
+                isActivePath(pathname, ROUTES.profile) ? "page" : undefined
+              }
             >
-              {item.label}
+              profile
             </Link>
-          );
-        })}
+            <form action={logout}>
+              <button className="nav-action" type="submit">
+                log out
+              </button>
+            </form>
+          </>
+        ) : (
+          <Link
+            href={ROUTES.login}
+            className={isActivePath(pathname, ROUTES.login) ? "active" : ""}
+            aria-current={
+              isActivePath(pathname, ROUTES.login) ? "page" : undefined
+            }
+          >
+            log in
+          </Link>
+        )}
       </div>
     </nav>
   );

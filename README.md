@@ -5,8 +5,9 @@ one short line. It is designed around curated moments rather than likes,
 followers, comments, or algorithmic competition.
 
 The project is currently in its **foundation phase**. Public pages and product
-boundaries are present, while authentication, uploads, persistence, moderation,
-and protected routes are intentionally not active yet.
+boundaries are present. Email/password authentication, email confirmation,
+logout, session refresh, and protected profile/admin routes are connected.
+Uploads and moderation workflows are not active yet.
 
 ## Stack
 
@@ -30,6 +31,15 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 Never expose a Supabase secret or service-role key in a `NEXT_PUBLIC_*`
 environment variable.
+
+Hosted Supabase Auth must allow the application callback URL, including:
+
+```text
+http://localhost:3000/auth/confirm
+http://127.0.0.1:3000/auth/confirm
+```
+
+Production deployments must add their own exact callback URL.
 
 ## Database foundation
 
@@ -87,6 +97,7 @@ docs/
 - Public pages may use demo data, but must not pretend backend actions work.
 - Authentication and authorization must be enforced server-side and with
   Supabase Row Level Security.
+- Protected pages validate signed claims through the Supabase SSR proxy.
 - The admin workspace must not appear in public navigation and must reject
   unauthorized access even when someone knows its URL.
 - Anonymous posts remain privately linked to their owner.

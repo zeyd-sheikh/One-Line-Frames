@@ -1,27 +1,49 @@
 import FoundationPanel from "../../components/FoundationPanel";
 import PageIntro from "../../components/PageIntro";
+import { requireAuthenticatedUser } from "../../lib/auth";
 
 export const metadata = {
   title: "Profile",
 };
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const { supabase, claims } = await requireAuthenticatedUser();
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("display_name, username, role, accepted_terms, created_at")
+    .eq("id", claims.sub)
+    .maybeSingle();
+
+  const displayName = profile?.display_name || claims.email || "your profile";
+
   return (
     <main className="page-shell">
       <PageIntro
         eyebrow="private account area"
-        title="your moments"
-        description="This will be the private home for a user's profile, submissions, moderation updates, appeals, and removal requests."
+        title={displayName}
+        description="Your account is connected. Submission history and moderation updates will appear here as those systems are built."
       />
+
+      {error ? (
+        <p className="auth-message auth-error" role="alert">
+          We could not load your profile details. Please try again shortly.
+        </p>
+      ) : null}
 
       <div className="panel-grid">
         <FoundationPanel
-          title="Profile"
-          description="A default display name will be stored here. Each submission may use that name, initials, an override, or remain anonymous publicly."
+          title="Account"
+          description={`Signed in as ${claims.email}. Your role is ${profile?.role || "user"}.`}
+          items={[
+            profile?.accepted_terms
+              ? "submission terms accepted"
+              : "submission terms not accepted yet",
+            "email confirmed",
+          ]}
         />
         <FoundationPanel
           title="Submission history"
-          description="Users will see pending, approved, rejected, appealed, and removal-requested moments without seeing anyone else's private records."
+          description="Pending, approved, rejected, appealed, and removal-requested moments will be listed here."
         />
       </div>
     </main>

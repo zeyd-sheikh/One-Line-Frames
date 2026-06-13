@@ -1,11 +1,24 @@
 import FoundationPanel from "../../components/FoundationPanel";
 import PageIntro from "../../components/PageIntro";
+import { notFound } from "next/navigation";
+import { requireAuthenticatedUser } from "../../lib/auth";
 
 export const metadata = {
   title: "Admin",
 };
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const { supabase, claims } = await requireAuthenticatedUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", claims.sub)
+    .maybeSingle();
+
+  if (profile?.role !== "admin") {
+    notFound();
+  }
+
   return (
     <main className="page-shell page-shell-wide">
       <PageIntro
