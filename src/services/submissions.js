@@ -12,7 +12,7 @@ const DEMO_PUBLIC_SUBMISSION_ROWS = [
     visual_key: "library",
     tags: ["before the storm", "campus"],
     orientation: "landscape",
-    is_photo_of_week: false,
+    is_photo_of_week: true,
     is_category_featured: false,
     created_at: "2026-06-12T14:30:00.000Z",
   },
@@ -30,7 +30,7 @@ const DEMO_PUBLIC_SUBMISSION_ROWS = [
     tags: ["after the exam", "outside"],
     orientation: "landscape",
     is_photo_of_week: false,
-    is_category_featured: false,
+    is_category_featured: true,
     created_at: "2026-06-11T19:00:00.000Z",
   },
   {
@@ -47,7 +47,7 @@ const DEMO_PUBLIC_SUBMISSION_ROWS = [
     tags: ["rain", "walking home"],
     orientation: "portrait",
     is_photo_of_week: false,
-    is_category_featured: false,
+    is_category_featured: true,
     created_at: "2026-06-10T18:15:00.000Z",
   },
   {
@@ -64,7 +64,7 @@ const DEMO_PUBLIC_SUBMISSION_ROWS = [
     tags: ["commute", "in between"],
     orientation: "square",
     is_photo_of_week: false,
-    is_category_featured: false,
+    is_category_featured: true,
     created_at: "2026-06-09T21:45:00.000Z",
   },
 ];
@@ -92,6 +92,32 @@ export function mapPublicSubmission(row) {
 
 export function getApprovedSubmissions() {
   return DEMO_PUBLIC_SUBMISSION_ROWS.map(mapPublicSubmission);
+}
+
+export function getPhotoOfWeek(submissions = getApprovedSubmissions()) {
+  return (
+    submissions.find((submission) => submission.isPhotoOfWeek) ??
+    submissions[0] ??
+    null
+  );
+}
+
+export function getFeaturedSubmissions(
+  submissions = getApprovedSubmissions(),
+  limit = 3
+) {
+  const photoOfWeek = getPhotoOfWeek(submissions);
+  const candidates = submissions.filter(
+    (submission) => submission.id !== photoOfWeek?.id
+  );
+  const featured = candidates.filter(
+    (submission) => submission.isCategoryFeatured
+  );
+  const fallback = candidates.filter(
+    (submission) => !submission.isCategoryFeatured
+  );
+
+  return [...featured, ...fallback].slice(0, limit);
 }
 
 export function getSubmissionTags(submissions) {

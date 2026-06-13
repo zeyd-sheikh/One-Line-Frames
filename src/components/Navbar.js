@@ -7,6 +7,7 @@ import { logout } from "../app/auth/actions";
 import { PRIMARY_NAV_ITEMS, ROUTES } from "../constants/routes";
 import { PRODUCT } from "../constants/product";
 import Icon from "./Icon";
+import ThemeToggle from "./ThemeToggle";
 
 function isActivePath(pathname, href) {
   if (href === ROUTES.home) {
@@ -63,6 +64,7 @@ export default function Navbar({ isAuthenticated }) {
         </div>
 
         <div className="account-links">
+          <ThemeToggle />
           {isAuthenticated ? (
             <>
               <Link

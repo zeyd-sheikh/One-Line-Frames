@@ -20,7 +20,8 @@ export default function Footer() {
 
         <div className="footer-column">
           <p className="footer-label">wander</p>
-          <Link href={ROUTES.home}>moments</Link>
+          <Link href={ROUTES.home}>home</Link>
+          <Link href={ROUTES.gallery}>gallery</Link>
           <Link href={ROUTES.submit}>send a moment</Link>
           <Link href={ROUTES.about}>about</Link>
         </div>

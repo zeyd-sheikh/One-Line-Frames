@@ -1,5 +1,6 @@
 export const ROUTES = Object.freeze({
   home: "/",
+  gallery: "/gallery",
   submit: "/submit",
   about: "/about",
   privacy: "/privacy",
@@ -11,7 +12,8 @@ export const ROUTES = Object.freeze({
 });
 
 export const PRIMARY_NAV_ITEMS = Object.freeze([
-  { href: ROUTES.home, label: "moments" },
+  { href: ROUTES.home, label: "home" },
+  { href: ROUTES.gallery, label: "gallery" },
   { href: ROUTES.submit, label: "send a moment" },
   { href: ROUTES.about, label: "about" },
 ]);

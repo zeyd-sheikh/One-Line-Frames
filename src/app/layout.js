@@ -4,6 +4,25 @@ import Footer from "../components/Footer";
 import { PRODUCT } from "../constants/product";
 import { getAuthenticatedUser } from "../lib/auth";
 
+const themeScript = `
+  (() => {
+    try {
+      const savedTheme = localStorage.getItem("olf-theme");
+      const systemTheme = matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      const theme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : systemTheme;
+
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+    } catch {
+      document.documentElement.dataset.theme = "light";
+    }
+  })();
+`;
+
 export const metadata = {
   title: {
     default: PRODUCT.name,
@@ -16,7 +35,10 @@ export default async function RootLayout({ children }) {
   const { claims } = await getAuthenticatedUser();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <div className="site-shell">
           <Navbar isAuthenticated={Boolean(claims)} />
