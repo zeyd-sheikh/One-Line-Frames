@@ -1,9 +1,11 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ROUTES } from "../../constants/routes";
 import { SUBMISSION_LIMITS } from "../../constants/product";
+import { requireAuthenticatedUser } from "../../lib/auth";
 import { createClient } from "../../lib/supabase/server";
 
 function redirectWithMessage(path, key, message) {
@@ -115,4 +117,37 @@ export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect(ROUTES.home);
+}
+
+export async function updateDisplayName(formData) {
+  const displayName = String(formData.get("displayName") ?? "").trim();
+
+  if (displayName.length > SUBMISSION_LIMITS.displayNameCharacters) {
+    redirectWithMessage(
+      ROUTES.profile,
+      "error",
+      `Display names must be ${SUBMISSION_LIMITS.displayNameCharacters} characters or less.`
+    );
+  }
+
+  const { supabase, claims } = await requireAuthenticatedUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ display_name: displayName || null })
+    .eq("id", claims.sub);
+
+  if (error) {
+    redirectWithMessage(
+      ROUTES.profile,
+      "error",
+      "We could not update your display name. Please try again."
+    );
+  }
+
+  revalidatePath(ROUTES.profile);
+  redirectWithMessage(
+    ROUTES.profile,
+    "message",
+    displayName ? "Display name updated." : "Display name removed."
+  );
 }

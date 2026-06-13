@@ -446,6 +446,34 @@ textarea {
   padding: 34px;
 }
 
+.account-settings {
+  margin-top: 54px;
+  padding-top: 34px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+  gap: 42px;
+  align-items: start;
+}
+
+.account-settings h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.account-settings > div > p:not(.eyebrow) {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.account-form {
+  padding: 28px;
+}
+
 .auth-field {
   margin-bottom: 26px;
 }
@@ -630,7 +658,8 @@ textarea {
   }
 
   .panel-grid,
-  .foundation-panel ul {
+  .foundation-panel ul,
+  .account-settings {
     grid-template-columns: 1fr;
   }
 }
