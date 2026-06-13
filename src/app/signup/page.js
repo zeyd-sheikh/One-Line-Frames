@@ -40,9 +40,11 @@ export default async function SignupPage({ searchParams }) {
             type="text"
             autoComplete="name"
             maxLength={80}
-            required
           />
-          <small>This becomes your default public name.</small>
+          <small>
+            Optional. This becomes your default public name and can be added
+            later.
+          </small>
         </div>
 
         <div className="auth-field">

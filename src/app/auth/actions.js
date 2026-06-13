@@ -55,8 +55,12 @@ export async function signup(formData) {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  if (!displayName || !email || !password || !confirmPassword) {
-    redirectWithMessage(ROUTES.signup, "error", "Complete every field.");
+  if (!email || !password || !confirmPassword) {
+    redirectWithMessage(
+      ROUTES.signup,
+      "error",
+      "Enter your email, password, and password confirmation."
+    );
   }
 
   if (displayName.length > SUBMISSION_LIMITS.displayNameCharacters) {
@@ -86,7 +90,7 @@ export async function signup(formData) {
     password,
     options: {
       data: {
-        display_name: displayName,
+        display_name: displayName || null,
       },
       emailRedirectTo: `${origin}${ROUTES.authConfirm}?next=${ROUTES.profile}`,
     },

@@ -1,12 +1,15 @@
 import FoundationPanel from "../../components/FoundationPanel";
 import PageIntro from "../../components/PageIntro";
 import { SUBMISSION_LIMITS } from "../../constants/product";
+import { requireAuthenticatedUser } from "../../lib/auth";
 
 export const metadata = {
   title: "Send a moment",
 };
 
-export default function SubmitPage() {
+export default async function SubmitPage() {
+  await requireAuthenticatedUser();
+
   return (
     <main className="page-shell">
       <PageIntro
