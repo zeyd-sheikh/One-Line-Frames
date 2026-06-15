@@ -25,6 +25,9 @@ export default function MomentGallery({ submissions }) {
   const [photoFullscreen, setPhotoFullscreen] = useState(false);
   const closeButtonRef = useRef(null);
   const photoCloseButtonRef = useRef(null);
+  const modalRef = useRef(null);
+  const photoDialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   const categories = useMemo(
     () => [
@@ -74,6 +77,37 @@ export default function MomentGallery({ submissions }) {
           setPhotoFullscreen(false);
         } else {
           setSelectedMoment(null);
+          window.requestAnimationFrame(() =>
+            previousFocusRef.current?.focus()
+          );
+        }
+      }
+
+      if (event.key === "Tab") {
+        const activeDialog = photoFullscreen
+          ? photoDialogRef.current
+          : modalRef.current;
+        const focusable = activeDialog
+          ? [
+              ...activeDialog.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+              ),
+            ]
+          : [];
+
+        if (!focusable.length) {
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
         }
       }
     }
@@ -91,6 +125,7 @@ export default function MomentGallery({ submissions }) {
   }
 
   function openMoment(submission) {
+    previousFocusRef.current = document.activeElement;
     setPhotoFullscreen(false);
     setSelectedMoment(submission);
   }
@@ -98,6 +133,7 @@ export default function MomentGallery({ submissions }) {
   function closeMoment() {
     setPhotoFullscreen(false);
     setSelectedMoment(null);
+    window.requestAnimationFrame(() => previousFocusRef.current?.focus());
   }
 
   return (
@@ -108,13 +144,17 @@ export default function MomentGallery({ submissions }) {
           <h2>small things, noticed.</h2>
         </div>
         <p>
-          Browse without scores or rankings. Filter by a feeling, or let the
-          wall surprise you.
+          A changing wall of student moments. Open one slowly, search for a
+          feeling, or let the order surprise you.
         </p>
       </div>
 
       <div className="gallery-toolbar">
-        <div className="category-tabs" aria-label="Filter by category">
+        <div
+          className="category-tabs"
+          role="group"
+          aria-label="Filter by category"
+        >
           {categories.map((category) => (
             <button
               key={category}
@@ -149,7 +189,11 @@ export default function MomentGallery({ submissions }) {
             <Icon name="shuffle" size={17} />
           </button>
 
-          <div className="layout-switcher" aria-label="Choose gallery layout">
+          <div
+            className="layout-switcher"
+            role="group"
+            aria-label="Choose gallery layout"
+          >
             <button
               type="button"
               className={layout === "gallery" ? "active" : ""}
@@ -190,7 +234,17 @@ export default function MomentGallery({ submissions }) {
       </div>
 
       {filtered.length > 0 ? (
-        <div className={`gallery gallery-${layout}`}>
+        <div
+          className={[
+            "gallery",
+            `gallery-${layout}`,
+            layout === "gallery" && filtered.length === 1
+              ? "gallery-count-one"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {filtered.map((submission, index) => (
             <PostCard
               key={submission.id}
@@ -228,10 +282,12 @@ export default function MomentGallery({ submissions }) {
           }}
         >
           <section
+            ref={modalRef}
             className="moment-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="moment-dialog-title"
+            aria-hidden={photoFullscreen || undefined}
           >
             <button
               ref={closeButtonRef}
@@ -287,6 +343,7 @@ export default function MomentGallery({ submissions }) {
 
           {photoFullscreen ? (
             <div
+              ref={photoDialogRef}
               className="photo-fullscreen-overlay"
               role="dialog"
               aria-modal="true"

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import AdminChangeHistory from "../../../components/AdminChangeHistory";
 import Icon from "../../../components/Icon";
 import PageIntro from "../../../components/PageIntro";
 import RemovalRequestForm from "../../../components/RemovalRequestForm";
@@ -162,12 +163,7 @@ export default async function ProfileSubmissionsPage({ searchParams }) {
                   </div>
                 ) : null}
 
-                {submission.adminReason ? (
-                  <div className="history-reason">
-                    <strong>admin note</strong>
-                    <span>{submission.adminReason}</span>
-                  </div>
-                ) : null}
+                <AdminChangeHistory events={submission.adminChanges} />
 
                 {submission.status === "approved" ? (
                   <div className="account-submission-footer">

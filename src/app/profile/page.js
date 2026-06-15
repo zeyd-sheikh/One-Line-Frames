@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AuthSubmitButton from "../../components/AuthSubmitButton";
+import AdminChangeHistory from "../../components/AdminChangeHistory";
 import Icon from "../../components/Icon";
 import PageIntro from "../../components/PageIntro";
 import { SUBMISSION_LIMITS } from "../../constants/product";
@@ -178,12 +179,10 @@ export default async function ProfilePage({ searchParams }) {
                       ? "anonymous"
                       : submission.displayName || "named post"}
                   </small>
-                  {submission.adminReason ? (
-                    <div className="history-reason">
-                      <strong>admin note</strong>
-                      <span>{submission.adminReason}</span>
-                    </div>
-                  ) : null}
+                  <AdminChangeHistory
+                    events={submission.adminChanges}
+                    compact
+                  />
                 </article>
               ))}
             </div>

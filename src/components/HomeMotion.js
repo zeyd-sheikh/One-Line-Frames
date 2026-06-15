@@ -55,11 +55,13 @@ export default function HomeMotion() {
         <span className="intro-frame-mark">
           <span />
         </span>
-        <p>one line frames</p>
+        <div className="intro-wordmark-row">
+          <span className="intro-line intro-line-left" />
+          <p>one line frames</p>
+          <span className="intro-line intro-line-right" />
+        </div>
         <small>ordinary moments, kept gently</small>
       </div>
-      <span className="intro-line intro-line-left" />
-      <span className="intro-line intro-line-right" />
     </div>
   );
 }

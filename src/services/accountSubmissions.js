@@ -1,6 +1,7 @@
 import "server-only";
 
 import { STORAGE_BUCKETS } from "../constants/database";
+import { buildAdminChangeEvents } from "../lib/adminChangeHistory";
 
 function createSignedUrlMap(items = []) {
   return new Map(
@@ -24,7 +25,6 @@ export async function getAccountSubmissions(supabase) {
         "one_line",
         "edited_one_line",
         "status",
-        "rejection_reason",
         "display_name_snapshot",
         "is_anonymous",
         "category_id",
@@ -41,9 +41,6 @@ export async function getAccountSubmissions(supabase) {
 
   const rows = data ?? [];
   const submissionIds = rows.map((submission) => submission.id);
-  const categoryIds = [
-    ...new Set(rows.map((submission) => submission.category_id).filter(Boolean)),
-  ];
   const originalPaths = [
     ...new Set(
       rows
@@ -63,6 +60,7 @@ export async function getAccountSubmissions(supabase) {
 
   const [
     { data: categories },
+    { data: frames },
     { data: tagLinks },
     { data: tags },
     { data: adminEdits },
@@ -70,12 +68,8 @@ export async function getAccountSubmissions(supabase) {
     originalImages,
     displayImages,
   ] = await Promise.all([
-    categoryIds.length
-      ? supabase
-          .from("categories")
-          .select("id, name, slug")
-          .in("id", categoryIds)
-      : Promise.resolve({ data: [] }),
+    supabase.from("categories").select("id, name, slug"),
+    supabase.from("frames").select("id, name"),
     submissionIds.length
       ? supabase
           .from("submission_tags")
@@ -86,7 +80,9 @@ export async function getAccountSubmissions(supabase) {
     submissionIds.length
       ? supabase
           .from("admin_edits")
-          .select("submission_id, changed_field, reason, created_at")
+          .select(
+            "id, submission_id, admin_id, changed_field, old_value, new_value, reason, created_at"
+          )
           .in("submission_id", submissionIds)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
@@ -114,10 +110,19 @@ export async function getAccountSubmissions(supabase) {
   const categoryById = new Map(
     (categories ?? []).map((category) => [category.id, category])
   );
+  const categoryNameById = new Map(
+    (categories ?? []).map((category) => [category.id, category.name])
+  );
+  const frameNameById = new Map(
+    (frames ?? []).map((frame) => [frame.id, frame.name])
+  );
   const tagById = new Map((tags ?? []).map((tag) => [tag.id, tag.name]));
   const tagsBySubmission = new Map();
-  const latestReasonBySubmission = new Map();
   const latestRemovalBySubmission = new Map();
+  const adminChangesBySubmission = buildAdminChangeEvents(adminEdits ?? [], {
+    categoryById: categoryNameById,
+    frameById: frameNameById,
+  });
 
   (tagLinks ?? []).forEach((link) => {
     const tagName = tagById.get(link.tag_id);
@@ -129,15 +134,6 @@ export async function getAccountSubmissions(supabase) {
     const currentTags = tagsBySubmission.get(link.submission_id) ?? [];
     currentTags.push(tagName);
     tagsBySubmission.set(link.submission_id, currentTags);
-  });
-
-  (adminEdits ?? []).forEach((edit) => {
-    if (
-      edit.changed_field !== "status" &&
-      !latestReasonBySubmission.has(edit.submission_id)
-    ) {
-      latestReasonBySubmission.set(edit.submission_id, edit.reason);
-    }
   });
 
   (removalRequests ?? []).forEach((request) => {
@@ -173,10 +169,7 @@ export async function getAccountSubmissions(supabase) {
         categoryName: category?.name ?? "Uncategorized",
         categorySlug: category?.slug ?? "",
         tags: tagsBySubmission.get(submission.id) ?? [],
-        adminReason:
-          submission.rejection_reason ||
-          latestReasonBySubmission.get(submission.id) ||
-          null,
+        adminChanges: adminChangesBySubmission.get(submission.id) ?? [],
         removalRequest:
           latestRemovalBySubmission.get(submission.id) ?? null,
         createdAt: submission.created_at,

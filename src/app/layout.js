@@ -40,9 +40,14 @@ export default async function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
+        <a className="skip-link" href="#main-content">
+          skip to main content
+        </a>
         <div className="site-shell">
           <Navbar isAuthenticated={Boolean(claims)} />
-          <div className="site-content">{children}</div>
+          <div id="main-content" className="site-content" tabIndex="-1">
+            {children}
+          </div>
           <Footer />
         </div>
       </body>

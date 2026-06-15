@@ -1,4 +1,5 @@
 import Image from "next/image";
+import AdminChangeHistory from "../../components/AdminChangeHistory";
 import Icon from "../../components/Icon";
 import ModerationSubmitButtons from "../../components/ModerationSubmitButtons";
 import PageIntro from "../../components/PageIntro";
@@ -7,6 +8,7 @@ import { STORAGE_BUCKETS } from "../../constants/database";
 import { SUBMISSION_LIMITS } from "../../constants/product";
 import { requireAdminUser } from "../../lib/auth";
 import { getImageFrameStyle } from "../../lib/imagePresentation";
+import { buildAdminChangeEvents } from "../../lib/adminChangeHistory";
 import {
   removePublishedSubmission,
   reviewRemovalRequest,
@@ -126,6 +128,7 @@ export default async function AdminPage({ searchParams }) {
   const [
     { data: tagLinks },
     { data: tags },
+    { data: publishedAdminEdits },
     signedResult,
     displaySignedResult,
   ] =
@@ -137,6 +140,18 @@ export default async function AdminPage({ searchParams }) {
             .in("submission_id", submissionIds)
         : Promise.resolve({ data: [] }),
       supabase.from("tags").select("id, name"),
+      published.length
+        ? supabase
+            .from("admin_edits")
+            .select(
+              "id, submission_id, admin_id, changed_field, old_value, new_value, reason, created_at"
+            )
+            .in(
+              "submission_id",
+              published.map((submission) => submission.id)
+            )
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] }),
       imagePaths.length
         ? supabase.storage
             .from(STORAGE_BUCKETS.originalImages)
@@ -150,6 +165,17 @@ export default async function AdminPage({ searchParams }) {
     ]);
 
   const tagsBySubmission = getTagsBySubmission(tagLinks ?? [], tags ?? []);
+  const publishedChangesBySubmission = buildAdminChangeEvents(
+    publishedAdminEdits ?? [],
+    {
+      categoryById: new Map(
+        (categories ?? []).map((category) => [category.id, category.name])
+      ),
+      frameById: new Map(
+        (frames ?? []).map((frame) => [frame.id, frame.name])
+      ),
+    }
+  );
   const signedUrls = new Map(
     (signedResult.data ?? [])
       .filter((item) => item.path && item.signedUrl)
@@ -642,6 +668,12 @@ export default async function AdminPage({ searchParams }) {
                         ? "anonymous"
                         : submission.display_name_snapshot || "named post"}
                     </p>
+                    <AdminChangeHistory
+                      events={
+                        publishedChangesBySubmission.get(submission.id) ?? []
+                      }
+                      compact
+                    />
                     <form
                       action={removePublishedSubmission}
                       className="published-removal-form"
