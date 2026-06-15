@@ -11,6 +11,7 @@ import {
 import { ROUTES } from "../constants/routes";
 import { createClient } from "../lib/supabase/client";
 import Icon from "./Icon";
+import TagInput from "./TagInput";
 
 const EXTENSION_BY_TYPE = {
   "image/jpeg": "jpg",
@@ -44,7 +45,7 @@ function formatBytes(bytes) {
 
 function getOrientation(width, height) {
   if (!width || !height) {
-    return "landscape";
+    return null;
   }
 
   const ratio = width / height;
@@ -60,7 +61,20 @@ function getOrientation(width, height) {
   return "square";
 }
 
-function readImageDimensions(file) {
+async function readImageDimensions(file) {
+  if ("createImageBitmap" in window) {
+    try {
+      const bitmap = await createImageBitmap(file, {
+        imageOrientation: "from-image",
+      });
+      const dimensions = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
+      return dimensions;
+    } catch {
+      // Fall back to an image element for browsers with partial bitmap support.
+    }
+  }
+
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
@@ -92,10 +106,11 @@ export default function SubmissionForm({
     width: null,
     height: null,
   });
-  const [orientation, setOrientation] = useState("landscape");
+  const [orientation, setOrientation] = useState(null);
   const [creditMode, setCreditMode] = useState(
     profileDisplayName ? "profile" : "anonymous"
   );
+  const [customDisplayName, setCustomDisplayName] = useState("");
   const [line, setLine] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(acceptedTerms);
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -133,6 +148,7 @@ export default function SubmissionForm({
       setFile(null);
       setPreviewUrl("");
       setDimensions({ width: null, height: null });
+      setOrientation(null);
       return;
     }
 
@@ -157,11 +173,28 @@ export default function SubmissionForm({
     }
 
     const nextDimensions = await readImageDimensions(nextFile);
+    const detectedOrientation = getOrientation(
+      nextDimensions.width,
+      nextDimensions.height
+    );
+
+    if (!detectedOrientation) {
+      event.target.value = "";
+      setFile(null);
+      setPreviewUrl("");
+      setDimensions({ width: null, height: null });
+      setOrientation(null);
+      setStatus({
+        type: "error",
+        message:
+          "This browser could not read the image dimensions. Try a JPEG, PNG, or WebP file.",
+      });
+      return;
+    }
+
     setFile(nextFile);
     setDimensions(nextDimensions);
-    setOrientation(
-      getOrientation(nextDimensions.width, nextDimensions.height)
-    );
+    setOrientation(detectedOrientation);
 
     if (!["image/heic", "image/heif"].includes(nextFileType)) {
       setPreviewUrl(URL.createObjectURL(nextFile));
@@ -172,8 +205,9 @@ export default function SubmissionForm({
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const form = event.currentTarget;
 
-    if (!file) {
+    if (!file || !orientation) {
       setStatus({ type: "error", message: "Choose a photo first." });
       return;
     }
@@ -195,11 +229,16 @@ export default function SubmissionForm({
       });
 
     if (uploadError) {
+      const isPolicyError = /row-level security|policy/i.test(
+        uploadError.message ?? ""
+      );
+
       setStatus({
         type: "error",
-        message:
-          uploadError.message ||
-          "The private image upload failed. Please try again.",
+        message: isPolicyError
+          ? "Private uploads are not enabled in Supabase yet. Apply the submission workflow migration, then try again."
+          : uploadError.message ||
+            "The private image upload failed. Please try again.",
       });
       setIsSubmitting(false);
       return;
@@ -208,7 +247,7 @@ export default function SubmissionForm({
     setStatus({ type: "progress", message: "saving your moment..." });
 
     try {
-      const formData = new FormData(event.currentTarget);
+      const formData = new FormData(form);
       formData.delete("photo");
       formData.set("originalImagePath", imagePath);
       formData.set("originalFilename", file.name);
@@ -303,20 +342,10 @@ export default function SubmissionForm({
 
         <div className="submission-orientation">
           <span>image shape</span>
-          <div>
-            {["landscape", "portrait", "square"].map((value) => (
-              <label key={value}>
-                <input
-                  type="radio"
-                  name="orientationChoice"
-                  value={value}
-                  checked={orientation === value}
-                  onChange={() => setOrientation(value)}
-                  disabled={isSubmitting}
-                />
-                <span>{value}</span>
-              </label>
-            ))}
+          <div className={orientation ? "is-detected" : ""}>
+            <Icon name={orientation ? "check" : "camera"} size={13} />
+            <span>{orientation || "waiting for a photo"}</span>
+            {orientation ? <small>detected automatically</small> : null}
           </div>
         </div>
 
@@ -344,7 +373,7 @@ export default function SubmissionForm({
         </div>
 
         <div className="submission-field-grid">
-          <label>
+          <label className="submission-field">
             <span>category</span>
             <select
               name="categoryId"
@@ -363,18 +392,16 @@ export default function SubmissionForm({
             </select>
           </label>
 
-          <label>
-            <span>mood tags</span>
-            <input
+          <div className="submission-field">
+            <label htmlFor="moodTags">mood tags</label>
+            <TagInput
+              id="moodTags"
               name="tags"
-              type="text"
-              placeholder="rain, commute, quiet"
+              limit={SUBMISSION_LIMITS.tagCount}
+              characterLimit={SUBMISSION_LIMITS.tagCharacters}
               disabled={isSubmitting}
             />
-            <small>
-              comma separated / up to {SUBMISSION_LIMITS.tagCount}
-            </small>
-          </label>
+          </div>
         </div>
       </section>
 
@@ -433,19 +460,18 @@ export default function SubmissionForm({
             </span>
           </label>
 
-          {creditMode === "custom" ? (
-            <input
-              className="credit-custom-input"
-              name="customDisplayName"
-              type="text"
-              maxLength={SUBMISSION_LIMITS.displayNameCharacters}
-              placeholder="public name or initials"
-              disabled={isSubmitting}
-              required
-            />
-          ) : (
-            <input name="customDisplayName" type="hidden" value="" />
-          )}
+          <input
+            className="credit-custom-input"
+            name="customDisplayName"
+            type="text"
+            value={customDisplayName}
+            onChange={(event) => setCustomDisplayName(event.target.value)}
+            maxLength={SUBMISSION_LIMITS.displayNameCharacters}
+            placeholder="public name or initials"
+            hidden={creditMode !== "custom"}
+            disabled={isSubmitting || creditMode !== "custom"}
+            required={creditMode === "custom"}
+          />
 
           <label>
             <input
