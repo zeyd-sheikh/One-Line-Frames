@@ -8,7 +8,9 @@ export const ROUTES = Object.freeze({
   signup: "/signup",
   authConfirm: "/auth/confirm",
   profile: "/profile",
+  profileSubmissions: "/profile/submissions",
   admin: "/admin",
+  adminVerify: "/admin/verify",
 });
 
 export const PRIMARY_NAV_ITEMS = Object.freeze([

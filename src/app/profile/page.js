@@ -1,8 +1,13 @@
+import Image from "next/image";
+import Link from "next/link";
 import AuthSubmitButton from "../../components/AuthSubmitButton";
 import Icon from "../../components/Icon";
 import PageIntro from "../../components/PageIntro";
 import { SUBMISSION_LIMITS } from "../../constants/product";
+import { ROUTES } from "../../constants/routes";
 import { requireAuthenticatedUser } from "../../lib/auth";
+import { getImageFrameStyle } from "../../lib/imagePresentation";
+import { getAccountSubmissions } from "../../services/accountSubmissions";
 import { updateDisplayName } from "../auth/actions";
 
 export const metadata = {
@@ -14,40 +19,25 @@ export default async function ProfilePage({ searchParams }) {
   const { supabase, claims } = await requireAuthenticatedUser();
   const [
     { data: profile, error },
-    { data: submissions, error: submissionsError },
+    { submissions, error: submissionsError },
   ] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name, username, role, accepted_terms, created_at")
       .eq("id", claims.sub)
       .maybeSingle(),
-    supabase
-      .from("submissions")
-      .select(
-        "id, one_line, edited_one_line, status, rejection_reason, display_name_snapshot, is_anonymous, created_at"
-      )
-      .order("created_at", { ascending: false }),
+    getAccountSubmissions(supabase),
   ]);
 
-  const submissionIds = (submissions ?? []).map((submission) => submission.id);
-  const { data: adminEdits } = submissionIds.length
-    ? await supabase
-        .from("admin_edits")
-        .select("submission_id, reason, created_at")
-        .in("submission_id", submissionIds)
-        .order("created_at", { ascending: false })
-    : { data: [] };
-  const latestEditReason = new Map();
-
-  (adminEdits ?? []).forEach((edit) => {
-    if (!latestEditReason.has(edit.submission_id)) {
-      latestEditReason.set(edit.submission_id, edit.reason);
-    }
-  });
-
   const displayName = profile?.display_name || claims.email || "your profile";
-  const moments = submissions ?? [];
-  const pendingCount = moments.filter(
+  const moments = submissions;
+  const progressMoments = moments.filter((submission) =>
+    ["pending", "rejected"].includes(submission.status)
+  );
+  const publishedMoments = moments.filter(
+    (submission) => submission.status === "approved"
+  );
+  const pendingCount = progressMoments.filter(
     (submission) => submission.status === "pending"
   ).length;
   const message = typeof params?.message === "string" ? params.message : "";
@@ -86,6 +76,25 @@ export default async function ProfilePage({ searchParams }) {
         </p>
       ) : null}
       {message ? <p className="auth-message auth-success">{message}</p> : null}
+
+      {profile?.role === "admin" ? (
+        <section className="profile-admin-entry">
+          <div className="profile-admin-entry-icon">
+            <Icon name="shield" size={23} />
+          </div>
+          <div>
+            <p className="eyebrow">admin account</p>
+            <h2>moderation workspace.</h2>
+            <p>
+              Review private submissions and record approval or rejection
+              decisions. Your password is required before entry.
+            </p>
+          </div>
+          <Link href={ROUTES.adminVerify}>
+            verify and enter <Icon name="arrow" size={14} />
+          </Link>
+        </section>
+      ) : null}
 
       <div className="profile-overview">
         <article className="profile-stat">
@@ -139,47 +148,44 @@ export default async function ProfilePage({ searchParams }) {
 
         <section className="profile-history">
           <div className="profile-history-heading">
-            <p className="eyebrow">your submissions</p>
-            <h2>moments in progress.</h2>
+            <div>
+              <p className="eyebrow">your submissions</p>
+              <h2>moments in review.</h2>
+            </div>
+            <Link href={`${ROUTES.profileSubmissions}?view=progress`}>
+              view all <Icon name="arrow" size={13} />
+            </Link>
           </div>
 
-          {moments.length ? (
+          {progressMoments.length ? (
             <div className="profile-history-list">
-              {moments.map((submission) => {
-                const moderationReason =
-                  submission.rejection_reason ||
-                  latestEditReason.get(submission.id);
-
-                return (
-                  <article key={submission.id}>
-                    <div className="history-status-row">
-                      <span className={`history-status ${submission.status}`}>
-                        {submission.status}
-                      </span>
-                      <time dateTime={submission.created_at}>
-                        {new Intl.DateTimeFormat("en-CA", {
-                          month: "short",
-                          day: "numeric",
-                        }).format(new Date(submission.created_at))}
-                      </time>
+              {progressMoments.slice(0, 3).map((submission) => (
+                <article key={submission.id}>
+                  <div className="history-status-row">
+                    <span className={`history-status ${submission.status}`}>
+                      {submission.status}
+                    </span>
+                    <time dateTime={submission.createdAt}>
+                      {new Intl.DateTimeFormat("en-CA", {
+                        month: "short",
+                        day: "numeric",
+                      }).format(new Date(submission.createdAt))}
+                    </time>
+                  </div>
+                  <p>{submission.line}</p>
+                  <small>
+                    {submission.isAnonymous
+                      ? "anonymous"
+                      : submission.displayName || "named post"}
+                  </small>
+                  {submission.adminReason ? (
+                    <div className="history-reason">
+                      <strong>admin note</strong>
+                      <span>{submission.adminReason}</span>
                     </div>
-                    <p>
-                      {submission.edited_one_line || submission.one_line}
-                    </p>
-                    <small>
-                      {submission.is_anonymous
-                        ? "anonymous"
-                        : submission.display_name_snapshot || "named post"}
-                    </small>
-                    {moderationReason ? (
-                      <div className="history-reason">
-                        <strong>admin note</strong>
-                        <span>{moderationReason}</span>
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })}
+                  ) : null}
+                </article>
+              ))}
             </div>
           ) : (
             <div className="profile-history-empty">
@@ -189,6 +195,58 @@ export default async function ProfilePage({ searchParams }) {
           )}
         </section>
       </div>
+
+      <section className="profile-published">
+        <div className="profile-published-heading">
+          <div>
+            <p className="eyebrow">approved and public</p>
+            <h2>published moments.</h2>
+          </div>
+          <Link href={`${ROUTES.profileSubmissions}?view=published`}>
+            view all published <Icon name="arrow" size={14} />
+          </Link>
+        </div>
+
+        {publishedMoments.length ? (
+          <div className="profile-published-grid">
+            {publishedMoments.slice(0, 3).map((submission) => (
+              <article key={submission.id}>
+                <div
+                  className={`profile-published-image ${submission.orientation}`}
+                  style={getImageFrameStyle(submission)}
+                >
+                  {submission.imageUrl ? (
+                    <Image
+                      src={submission.imageUrl}
+                      alt={submission.line}
+                      fill
+                      sizes="(max-width: 720px) 100vw, 33vw"
+                      unoptimized
+                    />
+                  ) : (
+                    <div>
+                      <Icon name="camera" size={22} />
+                      <span>preview unavailable</span>
+                    </div>
+                  )}
+                </div>
+                <div className="profile-published-copy">
+                  <span>{submission.categoryName}</span>
+                  <h3>{submission.line}</h3>
+                  <Link href={ROUTES.gallery}>
+                    view in gallery <Icon name="arrow" size={13} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="profile-published-empty">
+            <Icon name="camera" size={24} />
+            <p>Approved moments will appear here and in the public gallery.</p>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

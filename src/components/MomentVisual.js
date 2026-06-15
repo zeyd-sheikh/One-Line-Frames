@@ -1,6 +1,11 @@
 import Image from "next/image";
 
-export default function MomentVisual({ submission, priority = false }) {
+export default function MomentVisual({
+  submission,
+  priority = false,
+  sizes = "(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 460px",
+  unoptimized = false,
+}) {
   if (submission.displayImageUrl) {
     return (
       <Image
@@ -9,7 +14,8 @@ export default function MomentVisual({ submission, priority = false }) {
         className="post-image"
         fill
         priority={priority}
-        sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 460px"
+        sizes={sizes}
+        unoptimized={unoptimized}
       />
     );
   }

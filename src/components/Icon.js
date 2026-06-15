@@ -32,6 +32,18 @@ export default function Icon({ name, size = 18, className = "" }) {
         <path d="m18 6-12 12" />
       </>
     ),
+    expand: (
+      <>
+        <path d="M8 3H3v5" />
+        <path d="m3 3 6 6" />
+        <path d="M16 3h5v5" />
+        <path d="m21 3-6 6" />
+        <path d="M8 21H3v-5" />
+        <path d="m3 21 6-6" />
+        <path d="M16 21h5v-5" />
+        <path d="m21 21-6-6" />
+      </>
+    ),
     grid: (
       <>
         <rect x="4" y="4" width="6" height="6" rx="1" />

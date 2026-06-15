@@ -190,6 +190,7 @@ export async function createSubmission(formData) {
   }
 
   revalidatePath(ROUTES.profile);
+  revalidatePath(ROUTES.profileSubmissions);
   revalidatePath(ROUTES.admin);
 
   return { ok: true, submissionId };

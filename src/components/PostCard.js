@@ -1,4 +1,5 @@
 import Icon from "./Icon";
+import { getImageFrameStyle } from "../lib/imagePresentation";
 import MomentVisual from "./MomentVisual";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
@@ -35,7 +36,7 @@ export default function PostCard({
         onClick={() => onOpen?.(submission)}
         aria-label={`Open moment: ${submission.line}`}
       >
-        <div className={frameClassName}>
+        <div className={frameClassName} style={getImageFrameStyle(submission)}>
           <MomentVisual submission={submission} priority={index < 2} />
           <span className="frame-corner frame-corner-one" />
           <span className="frame-corner frame-corner-two" />

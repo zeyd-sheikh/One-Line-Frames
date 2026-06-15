@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ROUTES } from "../constants/routes";
+import { hasVerifiedAdminAccess } from "./adminAccess";
 import { createClient } from "./supabase/server";
 
 export async function getAuthenticatedUser() {
@@ -22,4 +23,23 @@ export async function requireAuthenticatedUser() {
   }
 
   return auth;
+}
+
+export async function requireAdminUser({ verified = false } = {}) {
+  const auth = await requireAuthenticatedUser();
+  const { data: profile } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.claims.sub)
+    .maybeSingle();
+
+  if (profile?.role !== "admin") {
+    notFound();
+  }
+
+  if (verified && !(await hasVerifiedAdminAccess(auth.claims))) {
+    redirect(ROUTES.adminVerify);
+  }
+
+  return { ...auth, profile };
 }

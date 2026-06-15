@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getImageFrameStyle } from "../lib/imagePresentation";
 import Icon from "./Icon";
 import MomentVisual from "./MomentVisual";
 import PostCard from "./PostCard";
@@ -21,7 +22,9 @@ export default function MomentGallery({ submissions }) {
   const [layout, setLayout] = useState("gallery");
   const [order, setOrder] = useState(submissions);
   const [selectedMoment, setSelectedMoment] = useState(null);
+  const [photoFullscreen, setPhotoFullscreen] = useState(false);
   const closeButtonRef = useRef(null);
+  const photoCloseButtonRef = useRef(null);
 
   const categories = useMemo(
     () => [
@@ -59,11 +62,19 @@ export default function MomentGallery({ submissions }) {
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
+    if (photoFullscreen) {
+      photoCloseButtonRef.current?.focus();
+    } else {
+      closeButtonRef.current?.focus();
+    }
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
-        setSelectedMoment(null);
+        if (photoFullscreen) {
+          setPhotoFullscreen(false);
+        } else {
+          setSelectedMoment(null);
+        }
       }
     }
 
@@ -73,10 +84,20 @@ export default function MomentGallery({ submissions }) {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedMoment]);
+  }, [photoFullscreen, selectedMoment]);
 
   function handleShuffle() {
     setOrder((current) => shuffle(current));
+  }
+
+  function openMoment(submission) {
+    setPhotoFullscreen(false);
+    setSelectedMoment(submission);
+  }
+
+  function closeMoment() {
+    setPhotoFullscreen(false);
+    setSelectedMoment(null);
   }
 
   return (
@@ -176,7 +197,7 @@ export default function MomentGallery({ submissions }) {
               submission={submission}
               index={index}
               layout={layout}
-              onOpen={setSelectedMoment}
+              onOpen={openMoment}
             />
           ))}
         </div>
@@ -202,7 +223,7 @@ export default function MomentGallery({ submissions }) {
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
-              setSelectedMoment(null);
+              closeMoment();
             }
           }}
         >
@@ -216,7 +237,7 @@ export default function MomentGallery({ submissions }) {
               ref={closeButtonRef}
               type="button"
               className="modal-close"
-              onClick={() => setSelectedMoment(null)}
+              onClick={closeMoment}
               aria-label="Close moment"
             >
               <Icon name="close" size={18} />
@@ -224,8 +245,19 @@ export default function MomentGallery({ submissions }) {
 
             <div
               className={`modal-visual ${selectedMoment.orientation} ${selectedMoment.frameCssClass || ""}`}
+              style={getImageFrameStyle(selectedMoment)}
             >
               <MomentVisual submission={selectedMoment} />
+              {selectedMoment.displayImageUrl ? (
+                <button
+                  type="button"
+                  className="modal-photo-button"
+                  onClick={() => setPhotoFullscreen(true)}
+                >
+                  <Icon name="expand" size={15} />
+                  view photo fullscreen
+                </button>
+              ) : null}
             </div>
 
             <div className="modal-copy">
@@ -252,6 +284,41 @@ export default function MomentGallery({ submissions }) {
               </p>
             </div>
           </section>
+
+          {photoFullscreen ? (
+            <div
+              className="photo-fullscreen-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Fullscreen photo"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) {
+                  setPhotoFullscreen(false);
+                }
+              }}
+            >
+              <button
+                ref={photoCloseButtonRef}
+                type="button"
+                className="photo-fullscreen-close"
+                onClick={() => setPhotoFullscreen(false)}
+                aria-label="Exit fullscreen photo"
+              >
+                <Icon name="close" size={19} />
+                <span>exit photo</span>
+              </button>
+              <div
+                className={`photo-fullscreen-visual ${selectedMoment.orientation}`}
+                style={getImageFrameStyle(selectedMoment)}
+              >
+                <MomentVisual
+                  submission={selectedMoment}
+                  sizes="100vw"
+                  unoptimized
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

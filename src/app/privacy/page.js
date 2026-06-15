@@ -42,8 +42,9 @@ export default function PrivacyPage() {
           </div>
           <h2>Removal is available</h2>
           <p>
-            Account holders will be able to request removal of their own
-            submissions. The detailed review and retention rules remain open.
+            Account holders can request removal of their own approved
+            submissions. An admin reviews the request and records a response
+            before the post is removed from the public gallery.
           </p>
         </section>
       </div>

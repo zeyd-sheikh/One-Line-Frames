@@ -206,9 +206,15 @@ export default function SubmissionForm({
   async function handleSubmit(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const formData = new FormData(form);
 
     if (!file || !orientation) {
       setStatus({ type: "error", message: "Choose a photo first." });
+      return;
+    }
+
+    if (!line.trim()) {
+      setStatus({ type: "error", message: "Write your one line first." });
       return;
     }
 
@@ -247,7 +253,6 @@ export default function SubmissionForm({
     setStatus({ type: "progress", message: "saving your moment..." });
 
     try {
-      const formData = new FormData(form);
       formData.delete("photo");
       formData.set("originalImagePath", imagePath);
       formData.set("originalFilename", file.name);

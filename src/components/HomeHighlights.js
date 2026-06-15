@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ROUTES } from "../constants/routes";
+import { getImageFrameStyle } from "../lib/imagePresentation";
 import Icon from "./Icon";
 import MomentVisual from "./MomentVisual";
 
@@ -36,6 +37,7 @@ export default function HomeHighlights({ photoOfWeek, featured }) {
             className={`week-frame ${photoOfWeek.orientation}`}
             href={ROUTES.gallery}
             aria-label={`View the gallery, starting with: ${photoOfWeek.line}`}
+            style={getImageFrameStyle(photoOfWeek)}
           >
             <MomentVisual submission={photoOfWeek} priority />
             <span className="week-frame-edge" aria-hidden="true" />
@@ -90,6 +92,7 @@ export default function HomeHighlights({ photoOfWeek, featured }) {
             >
               <div
                 className={`featured-visual ${submission.orientation} ${submission.frameCssClass || ""}`}
+                style={getImageFrameStyle(submission)}
               >
                 <MomentVisual submission={submission} />
                 <span className="featured-number">
