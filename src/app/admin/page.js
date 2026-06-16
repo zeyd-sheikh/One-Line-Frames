@@ -1,5 +1,6 @@
 import Image from "next/image";
 import AdminChangeHistory from "../../components/AdminChangeHistory";
+import AppealDecisionButtons from "../../components/AppealDecisionButtons";
 import Icon from "../../components/Icon";
 import ModerationSubmitButtons from "../../components/ModerationSubmitButtons";
 import PageIntro from "../../components/PageIntro";
@@ -11,6 +12,7 @@ import { getImageFrameStyle } from "../../lib/imagePresentation";
 import { buildAdminChangeEvents } from "../../lib/adminChangeHistory";
 import {
   removePublishedSubmission,
+  reviewAppeal,
   reviewRemovalRequest,
   reviewSubmission,
   updatePublicationHighlight,
@@ -47,6 +49,12 @@ function getTagsBySubmission(tagLinks, tags) {
   return result;
 }
 
+function getAppealSubmission(appeal) {
+  return Array.isArray(appeal.submission)
+    ? appeal.submission[0]
+    : appeal.submission;
+}
+
 export default async function AdminPage({ searchParams }) {
   const params = await searchParams;
   const { supabase } = await requireAdminUser({ verified: true });
@@ -55,7 +63,7 @@ export default async function AdminPage({ searchParams }) {
     { data: pendingSubmissions, error: queueError },
     { data: categories },
     { data: frames },
-    { count: appealCount },
+    { data: pendingAppeals, error: appealQueueError },
     { data: removalRequests, error: removalQueueError },
     { data: publishedSubmissions, error: publishedQueueError },
   ] = await Promise.all([
@@ -94,8 +102,17 @@ export default async function AdminPage({ searchParams }) {
       .order("sort_order"),
     supabase
       .from("appeals")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+      .select(
+        [
+          "id",
+          "submission_id",
+          "appeal_text",
+          "created_at",
+          "submission:submissions(id, original_image_path, image_width, image_height, orientation, one_line, edited_one_line, display_name_snapshot, is_anonymous, rejection_reason, created_at)",
+        ].join(",")
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: true }),
     supabase
       .from("removal_requests")
       .select("id, submission_id, reason, created_at")
@@ -111,15 +128,23 @@ export default async function AdminPage({ searchParams }) {
   ]);
 
   const queue = pendingSubmissions ?? [];
+  const appeals = pendingAppeals ?? [];
   const published = publishedSubmissions ?? [];
   const pendingRemovalRequests = removalRequests ?? [];
   const publishedById = new Map(
     published.map((submission) => [submission.id, submission])
   );
   const submissionIds = queue.map((submission) => submission.id);
-  const imagePaths = queue.map(
-    (submission) => submission.original_image_path
-  );
+  const imagePaths = [
+    ...new Set(
+      [
+        ...queue.map((submission) => submission.original_image_path),
+        ...appeals.map(
+          (appeal) => getAppealSubmission(appeal)?.original_image_path
+        ),
+      ].filter(Boolean)
+    ),
+  ];
 
   const displayPaths = published
     .map((submission) => submission.display_image_path)
@@ -219,6 +244,11 @@ export default async function AdminPage({ searchParams }) {
           The publication-removal workspace could not be fully loaded.
         </p>
       ) : null}
+      {appealQueueError ? (
+        <p className="auth-message auth-error" role="alert">
+          The appeal queue could not be loaded.
+        </p>
+      ) : null}
 
       <div className="admin-stats">
         <article>
@@ -226,7 +256,7 @@ export default async function AdminPage({ searchParams }) {
           <p>pending review</p>
         </article>
         <article>
-          <span>{String(appealCount ?? 0).padStart(2, "0")}</span>
+          <span>{String(appeals.length).padStart(2, "0")}</span>
           <p>open appeals</p>
         </article>
         <article>
@@ -236,14 +266,14 @@ export default async function AdminPage({ searchParams }) {
         <article>
           <Icon
             name={
-              queue.length || pendingRemovalRequests.length
+              queue.length || appeals.length || pendingRemovalRequests.length
                 ? "journal"
                 : "check"
             }
             size={25}
           />
           <p>
-            {queue.length || pendingRemovalRequests.length
+            {queue.length || appeals.length || pendingRemovalRequests.length
               ? "review needed"
               : "all quiet"}
           </p>
@@ -453,6 +483,106 @@ export default async function AdminPage({ searchParams }) {
             <Icon name="check" size={28} />
             <h3>the queue is clear.</h3>
             <p>New pending submissions will appear here automatically.</p>
+          </div>
+        )}
+      </section>
+
+      <section className="admin-appeal-section" id="appeals">
+        <div className="review-queue-heading">
+          <div>
+            <p className="eyebrow">one-time review</p>
+            <h2>appeals.</h2>
+          </div>
+          <p>
+            Accepting an appeal moves the rejected submission back into pending
+            review. Declining keeps it rejected and sends the owner your
+            response.
+          </p>
+        </div>
+
+        {appeals.length ? (
+          <div className="removal-review-list">
+            {appeals.map((appeal) => {
+              const submission = getAppealSubmission(appeal);
+              const imageUrl = submission?.original_image_path
+                ? signedUrls.get(submission.original_image_path)
+                : null;
+              const line = submission
+                ? submission.edited_one_line || submission.one_line
+                : "Related rejected post unavailable";
+
+              return (
+                <article
+                  className="removal-review-card appeal-review-card"
+                  key={appeal.id}
+                >
+                  <div
+                    className={`removal-review-image ${submission?.orientation || "landscape"}`}
+                    style={
+                      submission ? getImageFrameStyle(submission) : undefined
+                    }
+                  >
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={line}
+                        fill
+                        sizes="(max-width: 760px) 100vw, 310px"
+                        unoptimized
+                      />
+                    ) : (
+                      <div>
+                        <Icon name="camera" size={23} />
+                        preview unavailable
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="removal-review-copy">
+                    <div className="removal-review-meta">
+                      <span>pending appeal</span>
+                      <time dateTime={appeal.created_at}>
+                        {DATE_FORMATTER.format(new Date(appeal.created_at))}
+                      </time>
+                    </div>
+                    <h3>{line}</h3>
+
+                    {submission?.rejection_reason ? (
+                      <div className="removal-owner-reason appeal-original-reason">
+                        <strong>original rejection note</strong>
+                        <p>{submission.rejection_reason}</p>
+                      </div>
+                    ) : null}
+
+                    <div className="removal-owner-reason">
+                      <strong>student appeal</strong>
+                      <p>{appeal.appeal_text}</p>
+                    </div>
+
+                    <form className="removal-review-form" action={reviewAppeal}>
+                      <input type="hidden" name="appealId" value={appeal.id} />
+                      <label htmlFor={`appeal-response-${appeal.id}`}>
+                        response to the owner
+                      </label>
+                      <textarea
+                        id={`appeal-response-${appeal.id}`}
+                        name="response"
+                        maxLength={SUBMISSION_LIMITS.editReasonCharacters}
+                        placeholder="Explain why the appeal was accepted or declined."
+                        required
+                      />
+                      <AppealDecisionButtons />
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="review-empty">
+            <Icon name="check" size={27} />
+            <h3>no appeals waiting.</h3>
+            <p>Rejected-submission appeals will appear here once submitted.</p>
           </div>
         )}
       </section>

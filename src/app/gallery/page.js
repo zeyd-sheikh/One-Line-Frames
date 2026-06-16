@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function GalleryPage() {
-  const submissions = await getApprovedSubmissions();
+  const { submissions, error } = await getApprovedSubmissions();
 
   return (
     <main className="gallery-page">
@@ -26,6 +26,13 @@ export default async function GalleryPage() {
           </p>
         </div>
       </header>
+
+      {error ? (
+        <p className="auth-message auth-error gallery-load-message" role="alert">
+          The public wall could not be loaded right now. Try refreshing in a
+          moment.
+        </p>
+      ) : null}
 
       <MomentGallery submissions={submissions} />
     </main>

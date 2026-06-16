@@ -10,7 +10,7 @@ import {
 } from "../services/submissions";
 
 export default async function HomePage() {
-  const submissions = await getApprovedSubmissions();
+  const { submissions, error: galleryError } = await getApprovedSubmissions();
   const photoOfWeek = getPhotoOfWeek(submissions);
   const featured = getFeaturedSubmissions(submissions);
 
@@ -117,6 +117,20 @@ export default async function HomePage() {
       </section>
 
       <HomeHighlights photoOfWeek={photoOfWeek} featured={featured} />
+
+      {galleryError ? (
+        <section className="home-wall-status" data-reveal>
+          <Icon name="camera" size={22} />
+          <div>
+            <p className="eyebrow">gallery status</p>
+            <h2>the wall is taking a second.</h2>
+            <p>
+              Approved moments could not be loaded right now, so featured
+              photos are hidden until the database responds again.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       <section className="how-it-works" data-reveal>
         <div className="section-heading">

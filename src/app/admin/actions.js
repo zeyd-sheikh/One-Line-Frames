@@ -346,6 +346,49 @@ export async function reviewRemovalRequest(formData) {
   );
 }
 
+export async function reviewAppeal(formData) {
+  const appealId = readText(formData, "appealId");
+  const decision = readText(formData, "decision");
+  const response = readText(formData, "response");
+
+  if (!appealId || !["accept", "reject"].includes(decision)) {
+    redirectWithMessage("error", "Choose a valid appeal decision.");
+  }
+
+  if (
+    !response ||
+    response.length > SUBMISSION_LIMITS.editReasonCharacters
+  ) {
+    redirectWithMessage(
+      "error",
+      `Provide an appeal response between 1 and ${SUBMISSION_LIMITS.editReasonCharacters} characters.`
+    );
+  }
+
+  const { supabase } = await requireAdminUser({ verified: true });
+  const { error } = await supabase.rpc(DATABASE_FUNCTIONS.reviewAppeal, {
+    p_appeal_id: appealId,
+    p_decision: decision,
+    p_response: response,
+  });
+
+  if (error) {
+    redirectWithMessage(
+      "error",
+      error.message || "The appeal could not be reviewed."
+    );
+  }
+
+  revalidatePublicationPaths();
+
+  redirectWithMessage(
+    "message",
+    decision === "accept"
+      ? "Appeal accepted. The submission is back in the review queue."
+      : "Appeal declined. The owner can see your response."
+  );
+}
+
 export async function removePublishedSubmission(formData) {
   const submissionId = readText(formData, "submissionId");
   const reason = readText(formData, "reason");

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AdminChangeHistory from "../../../components/AdminChangeHistory";
+import AppealRequestForm from "../../../components/AppealRequestForm";
 import Icon from "../../../components/Icon";
 import PageIntro from "../../../components/PageIntro";
 import RemovalRequestForm from "../../../components/RemovalRequestForm";
@@ -165,6 +166,25 @@ export default async function ProfileSubmissionsPage({ searchParams }) {
 
                 <AdminChangeHistory events={submission.adminChanges} />
 
+                {submission.appeal ? (
+                  <div
+                    className={`appeal-request-response ${submission.appeal.status}`}
+                  >
+                    <strong>
+                      {submission.appeal.status === "pending"
+                        ? "appeal pending"
+                        : submission.appeal.status === "accepted"
+                          ? "appeal accepted"
+                          : "appeal declined"}
+                    </strong>
+                    <span>
+                      {submission.appeal.status === "pending"
+                        ? "The admin team will review your appeal once."
+                        : submission.appeal.admin_response}
+                    </span>
+                  </div>
+                ) : null}
+
                 {submission.status === "approved" ? (
                   <div className="account-submission-footer">
                     <Link
@@ -191,13 +211,19 @@ export default async function ProfileSubmissionsPage({ searchParams }) {
                     ) : null}
                   </div>
                 ) : (
-                  <p className="account-submission-state">
-                    {submission.status === "pending"
-                      ? "This moment is private and waiting for admin review."
-                      : submission.status === "removed"
-                        ? "This moment has been removed from the public gallery."
-                        : "This moment remains private and is not in the gallery."}
-                  </p>
+                  <div className="account-submission-state">
+                    <p>
+                      {submission.status === "pending"
+                        ? "This moment is private and waiting for admin review."
+                        : submission.status === "removed"
+                          ? "This moment has been removed from the public gallery."
+                          : "This moment remains private and is not in the gallery."}
+                    </p>
+                    {submission.status === "rejected" &&
+                    !submission.appeal ? (
+                      <AppealRequestForm submissionId={submission.id} />
+                    ) : null}
+                  </div>
                 )}
                 {submission.status === "removed" &&
                 submission.removalRequest?.admin_response ? (

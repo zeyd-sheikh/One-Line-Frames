@@ -113,6 +113,81 @@ export async function signup(formData) {
   );
 }
 
+export async function requestPasswordReset(formData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+
+  if (!email) {
+    redirectWithMessage(
+      ROUTES.forgotPassword,
+      "error",
+      "Enter the email connected to your account."
+    );
+  }
+
+  const origin = await getRequestOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}${ROUTES.authConfirm}?next=${ROUTES.resetPassword}`,
+  });
+
+  if (error) {
+    redirectWithMessage(ROUTES.forgotPassword, "error", error.message);
+  }
+
+  redirectWithMessage(
+    ROUTES.forgotPassword,
+    "message",
+    "If an account uses that email, a reset link is on its way."
+  );
+}
+
+export async function resetPassword(formData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!password || !confirmPassword) {
+    redirectWithMessage(
+      ROUTES.resetPassword,
+      "error",
+      "Enter and confirm your new password."
+    );
+  }
+
+  if (password.length < 8) {
+    redirectWithMessage(
+      ROUTES.resetPassword,
+      "error",
+      "Use a password with at least 8 characters."
+    );
+  }
+
+  if (password !== confirmPassword) {
+    redirectWithMessage(
+      ROUTES.resetPassword,
+      "error",
+      "Passwords do not match."
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    redirectWithMessage(
+      ROUTES.resetPassword,
+      "error",
+      "That reset session is invalid or expired. Request a new link."
+    );
+  }
+
+  await supabase.auth.signOut();
+  redirectWithMessage(
+    ROUTES.login,
+    "message",
+    "Password updated. Log in with your new password."
+  );
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

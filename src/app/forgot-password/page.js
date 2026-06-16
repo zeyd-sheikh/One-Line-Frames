@@ -5,13 +5,13 @@ import AuthSubmitButton from "../../components/AuthSubmitButton";
 import Icon from "../../components/Icon";
 import { ROUTES } from "../../constants/routes";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { login } from "../auth/actions";
+import { requestPasswordReset } from "../auth/actions";
 
 export const metadata = {
-  title: "Log in",
+  title: "Reset password",
 };
 
-export default async function LoginPage({ searchParams }) {
+export default async function ForgotPasswordPage({ searchParams }) {
   const [{ claims }, params] = await Promise.all([
     getAuthenticatedUser(),
     searchParams,
@@ -30,17 +30,17 @@ export default async function LoginPage({ searchParams }) {
         <section className="auth-content">
           <div className="auth-heading">
             <div className="auth-heading-icon">
-              <Icon name="user" size={18} />
+              <Icon name="shield" size={18} />
             </div>
-            <p className="eyebrow">welcome back</p>
-            <h1>return to your moments.</h1>
+            <p className="eyebrow">account recovery</p>
+            <h1>reset your password.</h1>
             <p>
-              Your profile, submissions, and moderation updates stay private to
-              your account.
+              Enter your email and we&apos;ll send a private reset link if the
+              account exists.
             </p>
           </div>
 
-          <form className="auth-form" action={login}>
+          <form className="auth-form" action={requestPasswordReset}>
             <div className="auth-field">
               <label htmlFor="email">email</label>
               <input
@@ -49,18 +49,6 @@ export default async function LoginPage({ searchParams }) {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
-                required
-              />
-            </div>
-
-            <div className="auth-field">
-              <label htmlFor="password">password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="your password"
                 required
               />
             </div>
@@ -74,17 +62,13 @@ export default async function LoginPage({ searchParams }) {
               <p className="auth-message auth-success">{message}</p>
             ) : null}
 
-            <AuthSubmitButton pendingText="logging in...">
-              log in
+            <AuthSubmitButton pendingText="sending reset link...">
+              send reset link
             </AuthSubmitButton>
           </form>
 
           <p className="page-link-note">
-            New here? <Link href={ROUTES.signup}>Create an account.</Link>
-          </p>
-          <p className="page-link-note page-link-note-tight">
-            Forgot your password?{" "}
-            <Link href={ROUTES.forgotPassword}>Reset it here.</Link>
+            Remembered it? <Link href={ROUTES.login}>Log in.</Link>
           </p>
         </section>
 

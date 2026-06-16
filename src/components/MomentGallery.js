@@ -16,6 +16,15 @@ function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
+function slugifyCategory(categoryName) {
+  return String(categoryName)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function MomentGallery({ submissions }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
@@ -30,23 +39,43 @@ export default function MomentGallery({ submissions }) {
   const previousFocusRef = useRef(null);
 
   const categories = useMemo(
-    () => [
-      "all",
-      ...new Set(submissions.map((submission) => submission.categoryName)),
-    ],
+    () => {
+      const categoryBySlug = new Map();
+
+      submissions.forEach((submission) => {
+        const name = submission.categoryName;
+        const slug = submission.categorySlug || slugifyCategory(name);
+
+        if (!name || !slug || categoryBySlug.has(slug)) {
+          return;
+        }
+
+        categoryBySlug.set(slug, {
+          label: name,
+          slug,
+        });
+      });
+
+      return [{ label: "all", slug: "all" }, ...categoryBySlug.values()];
+    },
     [submissions]
   );
+  const activeCategoryLabel =
+    categories.find((category) => category.slug === activeCategory)?.label ??
+    "all";
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return order.filter((submission) => {
+      const submissionCategorySlug =
+        submission.categorySlug || slugifyCategory(submission.categoryName);
       const matchesCategory =
-        activeCategory === "all" ||
-        submission.categoryName === activeCategory;
+        activeCategory === "all" || submissionCategorySlug === activeCategory;
       const searchable = [
         submission.line,
         submission.categoryName,
+        submission.categorySlug,
         submission.displayName,
         ...submission.tags,
       ]
@@ -57,6 +86,14 @@ export default function MomentGallery({ submissions }) {
       return matchesCategory && searchable.includes(normalizedQuery);
     });
   }, [activeCategory, order, query]);
+
+  useEffect(() => {
+    document.documentElement.dataset.galleryTheme = activeCategory;
+
+    return () => {
+      delete document.documentElement.dataset.galleryTheme;
+    };
+  }, [activeCategory]);
 
   useEffect(() => {
     if (!selectedMoment) {
@@ -157,12 +194,12 @@ export default function MomentGallery({ submissions }) {
         >
           {categories.map((category) => (
             <button
-              key={category}
+              key={category.slug}
               type="button"
-              className={activeCategory === category ? "active" : ""}
-              onClick={() => setActiveCategory(category)}
+              className={activeCategory === category.slug ? "active" : ""}
+              onClick={() => setActiveCategory(category.slug)}
             >
-              {category}
+              {category.label}
             </button>
           ))}
         </div>
@@ -217,9 +254,14 @@ export default function MomentGallery({ submissions }) {
       </div>
 
       <div className="gallery-result-line" aria-live="polite">
-        <span>
-          {filtered.length} {filtered.length === 1 ? "moment" : "moments"}
-        </span>
+        <div className="gallery-result-meta">
+          <span>
+            {filtered.length} {filtered.length === 1 ? "moment" : "moments"}
+          </span>
+          {activeCategory !== "all" ? (
+            <small>{activeCategoryLabel} atmosphere</small>
+          ) : null}
+        </div>
         {query || activeCategory !== "all" ? (
           <button
             type="button"

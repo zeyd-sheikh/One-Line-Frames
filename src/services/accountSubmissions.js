@@ -64,6 +64,7 @@ export async function getAccountSubmissions(supabase) {
     { data: tagLinks },
     { data: tags },
     { data: adminEdits },
+    { data: appeals },
     { data: removalRequests },
     originalImages,
     displayImages,
@@ -82,6 +83,15 @@ export async function getAccountSubmissions(supabase) {
           .from("admin_edits")
           .select(
             "id, submission_id, admin_id, changed_field, old_value, new_value, reason, created_at"
+          )
+          .in("submission_id", submissionIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    submissionIds.length
+      ? supabase
+          .from("appeals")
+          .select(
+            "id, submission_id, appeal_text, status, admin_response, created_at, reviewed_at"
           )
           .in("submission_id", submissionIds)
           .order("created_at", { ascending: false })
@@ -118,6 +128,7 @@ export async function getAccountSubmissions(supabase) {
   );
   const tagById = new Map((tags ?? []).map((tag) => [tag.id, tag.name]));
   const tagsBySubmission = new Map();
+  const appealBySubmission = new Map();
   const latestRemovalBySubmission = new Map();
   const adminChangesBySubmission = buildAdminChangeEvents(adminEdits ?? [], {
     categoryById: categoryNameById,
@@ -134,6 +145,12 @@ export async function getAccountSubmissions(supabase) {
     const currentTags = tagsBySubmission.get(link.submission_id) ?? [];
     currentTags.push(tagName);
     tagsBySubmission.set(link.submission_id, currentTags);
+  });
+
+  (appeals ?? []).forEach((appeal) => {
+    if (!appealBySubmission.has(appeal.submission_id)) {
+      appealBySubmission.set(appeal.submission_id, appeal);
+    }
   });
 
   (removalRequests ?? []).forEach((request) => {
@@ -170,6 +187,7 @@ export async function getAccountSubmissions(supabase) {
         categorySlug: category?.slug ?? "",
         tags: tagsBySubmission.get(submission.id) ?? [],
         adminChanges: adminChangesBySubmission.get(submission.id) ?? [],
+        appeal: appealBySubmission.get(submission.id) ?? null,
         removalRequest:
           latestRemovalBySubmission.get(submission.id) ?? null,
         createdAt: submission.created_at,

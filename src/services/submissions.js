@@ -5,85 +5,6 @@ import {
 } from "../constants/database";
 import { createClient } from "../lib/supabase/server";
 
-const DEMO_PUBLIC_SUBMISSION_ROWS = [
-  {
-    id: "1",
-    display_image_path: null,
-    line: "found the last quiet corner of the library before exams started.",
-    display_name: "S.",
-    is_anonymous: false,
-    category_name: "Quiet Moments",
-    category_slug: "quiet-moments",
-    frame_slug: "soft-paper",
-    frame_css_class: "frame-soft-paper",
-    visual_key: "library",
-    tags: ["before the storm", "campus"],
-    image_width: 1600,
-    image_height: 1000,
-    orientation: "landscape",
-    is_photo_of_week: true,
-    is_category_featured: false,
-    created_at: "2026-06-12T14:30:00.000Z",
-  },
-  {
-    id: "2",
-    display_image_path: null,
-    line: "the exam was tomorrow. i watched the birds instead.",
-    display_name: "Nadia",
-    is_anonymous: false,
-    category_name: "Campus Life",
-    category_slug: "campus-life",
-    frame_slug: "clean-landscape",
-    frame_css_class: "frame-clean-landscape",
-    visual_key: "birds",
-    tags: ["after the exam", "outside"],
-    image_width: 1500,
-    image_height: 1000,
-    orientation: "landscape",
-    is_photo_of_week: false,
-    is_category_featured: true,
-    created_at: "2026-06-11T19:00:00.000Z",
-  },
-  {
-    id: "3",
-    display_image_path: null,
-    line: "the sky looked softer after the rain.",
-    display_name: "anonymous",
-    is_anonymous: true,
-    category_name: "Nature",
-    category_slug: "nature",
-    frame_slug: "clean-portrait",
-    frame_css_class: "frame-clean-portrait",
-    visual_key: "rain",
-    tags: ["rain", "walking home"],
-    image_width: 1000,
-    image_height: 1400,
-    orientation: "portrait",
-    is_photo_of_week: false,
-    is_category_featured: true,
-    created_at: "2026-06-10T18:15:00.000Z",
-  },
-  {
-    id: "4",
-    display_image_path: null,
-    line: "half my thoughts stayed somewhere between class and the bus stop.",
-    display_name: "M.",
-    is_anonymous: false,
-    category_name: "Quiet Moments",
-    category_slug: "quiet-moments",
-    frame_slug: "clean-square",
-    frame_css_class: "frame-clean-square",
-    visual_key: "commute",
-    tags: ["commute", "in between"],
-    image_width: 1200,
-    image_height: 1200,
-    orientation: "square",
-    is_photo_of_week: false,
-    is_category_featured: true,
-    created_at: "2026-06-09T21:45:00.000Z",
-  },
-];
-
 export function mapPublicSubmission(row) {
   return {
     id: row.id,
@@ -113,8 +34,18 @@ export async function getApprovedSubmissions() {
     DATABASE_FUNCTIONS.getPublicSubmissions
   );
 
-  if (error || !data?.length) {
-    return DEMO_PUBLIC_SUBMISSION_ROWS.map(mapPublicSubmission);
+  if (error) {
+    return {
+      submissions: [],
+      error,
+    };
+  }
+
+  if (!data?.length) {
+    return {
+      submissions: [],
+      error: null,
+    };
   }
 
   const displayPaths = [
@@ -135,13 +66,16 @@ export async function getApprovedSubmissions() {
       .map((image) => [image.path, image.signedUrl])
   );
 
-  return data.map((submission) =>
-    mapPublicSubmission({
-      ...submission,
-      display_image_url:
-        signedUrlByPath.get(submission.display_image_path) ?? null,
-    })
-  );
+  return {
+    error: null,
+    submissions: data.map((submission) =>
+      mapPublicSubmission({
+        ...submission,
+        display_image_url:
+          signedUrlByPath.get(submission.display_image_path) ?? null,
+      })
+    ),
+  };
 }
 
 export function getPhotoOfWeek(submissions = []) {

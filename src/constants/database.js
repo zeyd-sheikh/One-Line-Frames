@@ -14,6 +14,8 @@ export const DATABASE_FUNCTIONS = Object.freeze({
   getPublicSubmissions: "get_public_submissions",
   createSubmission: "create_submission",
   reviewSubmission: "review_submission",
+  requestSubmissionAppeal: "request_submission_appeal",
+  reviewAppeal: "review_appeal",
   requestSubmissionRemoval: "request_submission_removal",
   reviewRemovalRequest: "review_removal_request",
   removePublishedSubmission: "remove_published_submission",
