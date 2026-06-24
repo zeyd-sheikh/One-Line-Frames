@@ -5,6 +5,37 @@ import {
 } from "../constants/database";
 import { createClient } from "../lib/supabase/server";
 
+const FEATURED_LIMIT = 3;
+
+function getDailySeed() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getStableHash(value) {
+  let hash = 2166136261;
+  const text = String(value);
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function getStableRandomOrder(submissions, seed = getDailySeed()) {
+  return [...submissions].sort((first, second) => {
+    const firstScore = getStableHash(`${seed}:${first.id}`);
+    const secondScore = getStableHash(`${seed}:${second.id}`);
+
+    if (firstScore !== secondScore) {
+      return firstScore - secondScore;
+    }
+
+    return String(first.id).localeCompare(String(second.id));
+  });
+}
+
 export function mapPublicSubmission(row) {
   return {
     id: row.id,
@@ -88,20 +119,35 @@ export function getPhotoOfWeek(submissions = []) {
 
 export function getFeaturedSubmissions(
   submissions = [],
-  limit = 3
+  limit = FEATURED_LIMIT
 ) {
-  const photoOfWeek = getPhotoOfWeek(submissions);
-  const candidates = submissions.filter(
-    (submission) => submission.id !== photoOfWeek?.id
-  );
-  const featured = candidates.filter(
-    (submission) => submission.isCategoryFeatured
-  );
-  const fallback = candidates.filter(
-    (submission) => !submission.isCategoryFeatured
-  );
+  const safeLimit = Math.max(0, Math.min(FEATURED_LIMIT, limit));
 
-  return [...featured, ...fallback].slice(0, limit);
+  if (!safeLimit || !submissions.length) {
+    return [];
+  }
+
+  const selected = new Map();
+  const manuallyFeatured = submissions
+    .filter((submission) => submission.isCategoryFeatured)
+    .slice(0, safeLimit);
+
+  manuallyFeatured.forEach((submission) => {
+    selected.set(submission.id, submission);
+  });
+
+  if (selected.size < safeLimit) {
+    const fallback = getStableRandomOrder(
+      submissions.filter((submission) => !selected.has(submission.id))
+    );
+
+    fallback.some((submission) => {
+      selected.set(submission.id, submission);
+      return selected.size >= safeLimit;
+    });
+  }
+
+  return [...selected.values()];
 }
 
 export function getSubmissionTags(submissions) {

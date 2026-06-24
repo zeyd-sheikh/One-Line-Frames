@@ -130,6 +130,9 @@ export default async function AdminPage({ searchParams }) {
   const queue = pendingSubmissions ?? [];
   const appeals = pendingAppeals ?? [];
   const published = publishedSubmissions ?? [];
+  const manualFeaturedCount = published.filter(
+    (submission) => submission.is_category_featured
+  ).length;
   const pendingRemovalRequests = removalRequests ?? [];
   const publishedById = new Map(
     published.map((submission) => [submission.id, submission])
@@ -703,6 +706,8 @@ export default async function AdminPage({ searchParams }) {
               const hasPendingRequest = pendingRemovalRequests.some(
                 (request) => request.submission_id === submission.id
               );
+              const featuredLimitReached =
+                manualFeaturedCount >= 3 && !submission.is_category_featured;
 
               return (
                 <article key={submission.id}>
@@ -752,11 +757,19 @@ export default async function AdminPage({ searchParams }) {
                             submission.is_category_featured ? "is-active" : ""
                           }
                           aria-pressed={submission.is_category_featured}
+                          disabled={featuredLimitReached}
+                          title={
+                            featuredLimitReached
+                              ? "Three photos are already manually featured."
+                              : undefined
+                          }
                         >
                           <Icon name="sparkle" size={13} />
                           {submission.is_category_featured
                             ? "featured"
-                            : "make featured"}
+                            : featuredLimitReached
+                              ? "3 featured max"
+                              : "make featured"}
                         </button>
                       </form>
 

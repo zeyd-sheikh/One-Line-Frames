@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Icon from "./Icon";
 import { getImageFrameStyle } from "../lib/imagePresentation";
 import MomentVisual from "./MomentVisual";
@@ -17,7 +16,6 @@ export default function PostCard({
   onOpen,
   layout = "gallery",
 }) {
-  const cardRef = useRef(null);
   const author = submission.isAnonymous
     ? "anonymous"
     : submission.displayName || "anonymous";
@@ -28,62 +26,8 @@ export default function PostCard({
   ]
     .filter(Boolean)
     .join(" ");
-
-  useEffect(() => {
-    const card = cardRef.current;
-
-    if (!card || layout !== "gallery") {
-      card?.style.removeProperty("grid-row-end");
-      return undefined;
-    }
-
-    const gallery = card.closest(".gallery-gallery");
-
-    if (!gallery) {
-      return undefined;
-    }
-
-    function updateGridSpan() {
-      const galleryStyles = window.getComputedStyle(gallery);
-      const rowHeight = Number.parseFloat(galleryStyles.gridAutoRows);
-      const rowGap = Number.parseFloat(galleryStyles.rowGap);
-      const cardGap =
-        Number.parseFloat(
-          galleryStyles.getPropertyValue("--gallery-card-gap")
-        ) || 0;
-
-      if (!rowHeight) {
-        return;
-      }
-
-      const cardHeight = card.getBoundingClientRect().height;
-      const span = Math.ceil(
-        (cardHeight + cardGap + rowGap) / (rowHeight + rowGap)
-      );
-
-      card.style.gridRowEnd = `span ${span}`;
-    }
-
-    updateGridSpan();
-
-    const resizeObserver =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(updateGridSpan);
-
-    resizeObserver?.observe(card);
-    window.addEventListener("resize", updateGridSpan);
-
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", updateGridSpan);
-      card.style.removeProperty("grid-row-end");
-    };
-  }, [layout]);
-
   return (
     <article
-      ref={cardRef}
       className={`post-card post-card-${layout}`}
       style={{ "--card-index": index }}
     >

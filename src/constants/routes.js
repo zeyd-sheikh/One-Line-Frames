@@ -3,6 +3,7 @@ export const ROUTES = Object.freeze({
   gallery: "/gallery",
   submit: "/submit",
   about: "/about",
+  contact: "/contact",
   privacy: "/privacy",
   login: "/login",
   signup: "/signup",
