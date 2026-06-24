@@ -7,13 +7,20 @@ export default function HomeMotion() {
 
   useEffect(() => {
     const revealItems = document.querySelectorAll("[data-reveal]");
+    const root = document.documentElement;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+    const introFallback = window.setTimeout(() => setShowIntro(false), 2600);
 
-    if (reduceMotion) {
+    root.classList.add("motion-ready");
+
+    if (reduceMotion || !("IntersectionObserver" in window)) {
       revealItems.forEach((item) => item.classList.add("is-visible"));
-      return undefined;
+      return () => {
+        window.clearTimeout(introFallback);
+        root.classList.remove("motion-ready");
+      };
     }
 
     const observer = new IntersectionObserver(
@@ -33,7 +40,11 @@ export default function HomeMotion() {
 
     revealItems.forEach((item) => observer.observe(item));
 
-    return () => observer.disconnect();
+    return () => {
+      window.clearTimeout(introFallback);
+      observer.disconnect();
+      root.classList.remove("motion-ready");
+    };
   }, []);
 
   if (!showIntro) {

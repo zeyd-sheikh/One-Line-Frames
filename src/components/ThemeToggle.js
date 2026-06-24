@@ -32,7 +32,11 @@ export default function ThemeToggle() {
 
     document.documentElement.dataset.theme = nextTheme;
     document.documentElement.style.colorScheme = nextTheme;
-    window.localStorage.setItem("olf-theme", nextTheme);
+    try {
+      window.localStorage.setItem("olf-theme", nextTheme);
+    } catch {
+      // Theme should still switch even if storage is unavailable.
+    }
     window.dispatchEvent(new Event(THEME_EVENT));
   }
 
