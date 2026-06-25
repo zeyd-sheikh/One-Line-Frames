@@ -30,7 +30,7 @@ export default function Footer() {
           <p className="footer-label">care</p>
           <Link href={ROUTES.privacy}>privacy</Link>
           <Link href={ROUTES.login}>your account</Link>
-          <a href={`mailto:${PRODUCT.contactEmail}`}>contact</a>
+          <Link href={`${ROUTES.about}#contact`}>contact</Link>
         </div>
 
         <div className="footer-support">

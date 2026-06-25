@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import Icon from "./Icon";
 
 const THEME_EVENT = "olf-theme-change";
@@ -19,6 +19,7 @@ function getServerSnapshot() {
 }
 
 export default function ThemeToggle() {
+  const buttonRef = useRef(null);
   const theme = useSyncExternalStore(
     subscribe,
     getSnapshot,
@@ -26,7 +27,11 @@ export default function ThemeToggle() {
   );
   const isDark = theme === "dark";
 
-  function toggleTheme() {
+  const toggleTheme = useCallback(() => {
+    if (buttonRef.current) {
+      buttonRef.current.dataset.reactReady = "true";
+    }
+
     const currentTheme = document.documentElement.dataset.theme || theme;
     const nextTheme = currentTheme === "dark" ? "light" : "dark";
 
@@ -38,13 +43,30 @@ export default function ThemeToggle() {
       // Theme should still switch even if storage is unavailable.
     }
     window.dispatchEvent(new Event(THEME_EVENT));
-  }
+  }, [theme]);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+
+    if (!button) {
+      return undefined;
+    }
+
+    button.dataset.reactReady = "true";
+    button.addEventListener("click", toggleTheme);
+
+    return () => {
+      button.removeEventListener("click", toggleTheme);
+      delete button.dataset.reactReady;
+    };
+  }, [toggleTheme]);
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       className="theme-toggle"
-      onClick={toggleTheme}
+      data-theme-toggle
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       aria-pressed={isDark}
       title={`Switch to ${isDark ? "light" : "dark"} mode`}

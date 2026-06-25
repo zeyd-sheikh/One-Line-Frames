@@ -37,6 +37,7 @@ export default function MomentGallery({ submissions }) {
   const modalRef = useRef(null);
   const photoDialogRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const galleryRootRef = useRef(null);
 
   const categories = useMemo(
     () => {
@@ -94,6 +95,65 @@ export default function MomentGallery({ submissions }) {
       delete document.documentElement.dataset.galleryTheme;
     };
   }, [activeCategory]);
+
+  useEffect(() => {
+    const galleryRoot = galleryRootRef.current;
+
+    if (!galleryRoot) {
+      return undefined;
+    }
+
+    function handleGalleryClick(event) {
+      const target = event.target instanceof Element ? event.target : null;
+
+      if (!target) {
+        return;
+      }
+
+      const shuffleButton = target.closest('[data-gallery-action="shuffle"]');
+
+      if (shuffleButton && galleryRoot.contains(shuffleButton)) {
+        event.preventDefault();
+        event.__olfGalleryHandled = true;
+        setOrder((current) => shuffle(current));
+        return;
+      }
+
+      const categoryButton = target.closest("[data-gallery-filter-category]");
+
+      if (categoryButton && galleryRoot.contains(categoryButton)) {
+        const nextCategory = categoryButton.dataset.galleryFilterCategory;
+
+        if (nextCategory) {
+          event.preventDefault();
+          event.__olfGalleryHandled = true;
+          setActiveCategory(nextCategory);
+        }
+
+        return;
+      }
+
+      const layoutButton = target.closest("[data-gallery-layout]");
+
+      if (layoutButton && galleryRoot.contains(layoutButton)) {
+        const nextLayout = layoutButton.dataset.galleryLayout;
+
+        if (nextLayout === "gallery" || nextLayout === "journal") {
+          event.preventDefault();
+          event.__olfGalleryHandled = true;
+          setLayout(nextLayout);
+        }
+      }
+    }
+
+    galleryRoot.dataset.reactReady = "true";
+    galleryRoot.addEventListener("click", handleGalleryClick);
+
+    return () => {
+      galleryRoot.removeEventListener("click", handleGalleryClick);
+      delete galleryRoot.dataset.reactReady;
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedMoment) {
@@ -157,10 +217,6 @@ export default function MomentGallery({ submissions }) {
     };
   }, [photoFullscreen, selectedMoment]);
 
-  function handleShuffle() {
-    setOrder((current) => shuffle(current));
-  }
-
   function openMoment(submission) {
     previousFocusRef.current = document.activeElement;
     setPhotoFullscreen(false);
@@ -174,7 +230,12 @@ export default function MomentGallery({ submissions }) {
   }
 
   return (
-    <section className="moment-gallery-section" id="moments">
+    <section
+      ref={galleryRootRef}
+      className="moment-gallery-section"
+      id="moments"
+      data-gallery-root
+    >
       <div className="gallery-heading">
         <div>
           <p className="eyebrow">the wall today</p>
@@ -196,8 +257,13 @@ export default function MomentGallery({ submissions }) {
             <button
               key={category.slug}
               type="button"
+              data-gallery-filter-category={category.slug}
               className={activeCategory === category.slug ? "active" : ""}
-              onClick={() => setActiveCategory(category.slug)}
+              aria-pressed={activeCategory === category.slug}
+              onClick={(event) => {
+                event.preventDefault();
+                setActiveCategory(category.slug);
+              }}
             >
               {category.label}
             </button>
@@ -219,7 +285,7 @@ export default function MomentGallery({ submissions }) {
           <button
             type="button"
             className="tool-button"
-            onClick={handleShuffle}
+            data-gallery-action="shuffle"
             aria-label="Shuffle moments"
             title="Shuffle moments"
           >
@@ -233,8 +299,8 @@ export default function MomentGallery({ submissions }) {
           >
             <button
               type="button"
+              data-gallery-layout="gallery"
               className={layout === "gallery" ? "active" : ""}
-              onClick={() => setLayout("gallery")}
               aria-label="Gallery layout"
               aria-pressed={layout === "gallery"}
             >
@@ -242,8 +308,8 @@ export default function MomentGallery({ submissions }) {
             </button>
             <button
               type="button"
+              data-gallery-layout="journal"
               className={layout === "journal" ? "active" : ""}
-              onClick={() => setLayout("journal")}
               aria-label="Journal layout"
               aria-pressed={layout === "journal"}
             >
@@ -255,7 +321,7 @@ export default function MomentGallery({ submissions }) {
 
       <div className="gallery-result-line" aria-live="polite">
         <div className="gallery-result-meta">
-          <span>
+          <span data-gallery-count>
             {filtered.length} {filtered.length === 1 ? "moment" : "moments"}
           </span>
           {activeCategory !== "all" ? (
@@ -280,9 +346,6 @@ export default function MomentGallery({ submissions }) {
           className={[
             "gallery",
             `gallery-${layout}`,
-            layout === "gallery" && filtered.length === 1
-              ? "gallery-count-one"
-              : "",
           ]
             .filter(Boolean)
             .join(" ")}

@@ -10,6 +10,15 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
 });
 
+function slugifyCategory(categoryName) {
+  return String(categoryName)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function PostCard({
   submission,
   index = 0,
@@ -26,10 +35,14 @@ export default function PostCard({
   ]
     .filter(Boolean)
     .join(" ");
+  const categorySlug =
+    submission.categorySlug || slugifyCategory(submission.categoryName);
 
   return (
     <article
       className={`post-card post-card-${layout}`}
+      data-gallery-card
+      data-gallery-category={categorySlug}
       style={{ "--card-index": index }}
     >
       <button
